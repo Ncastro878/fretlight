@@ -34,6 +34,10 @@ export const CAMERA_PRESETS: Record<CameraPreset, { label: string; position: [nu
   },
 }
 
+/** Horizontal stretch of neck (scene units) to fit on a portrait screen, per preset. */
+const PORTRAIT_SPAN: Record<CameraPreset, number> = { lap: 4.6, neck: 2.6, front: 4.6, top: 4.2 }
+const PORTRAIT_CENTER: Record<CameraPreset, number> = { lap: 2.1, neck: 1.1, front: 2.1, top: 1.9 }
+
 interface Props {
   preset: CameraPreset
   /** Bump this to re-apply the same preset. */
@@ -50,16 +54,18 @@ export function CameraRig({ preset, nonce }: Props) {
     const p = CAMERA_PRESETS[preset]
     const target = new THREE.Vector3(...p.target)
     const position = new THREE.Vector3(...p.position)
-    if (portrait && preset !== 'front') {
-      // A tall screen cannot fit a horizontal neck, so stand it up like a
-      // fretboard chart: headstock at the top, seen from above with a slight tilt.
-      const x = preset === 'neck' ? 1.5 : 2.3
-      const height = preset === 'neck' ? 3.9 : 5.6
-      target.set(x, 0, 0)
-      position.set(x + 0.2, height / Math.min(1, aspect * 1.7), 1.2)
-      camera.up.set(-1, 0, 0)
-    } else {
-      camera.up.set(0, 1, 0)
+    camera.up.set(0, 1, 0)
+    if (portrait) {
+      // Keep the lap orientation on tall screens, but frame a shorter stretch of
+      // neck so it fits the narrow width: pull the camera back along its line of
+      // sight until the wanted span fits horizontally.
+      const span = PORTRAIT_SPAN[preset]
+      const centerX = PORTRAIT_CENTER[preset]
+      const dir = position.clone().sub(target).normalize()
+      target.set(centerX, 0, 0)
+      const vfov = THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov ?? 42)
+      const distance = span / 2 / (Math.tan(vfov / 2) * aspect)
+      position.copy(target).addScaledVector(dir, distance)
     }
     camera.position.copy(position)
     controls.current?.target.copy(target)
