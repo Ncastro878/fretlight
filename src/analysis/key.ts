@@ -72,6 +72,8 @@ const TEMPLATES: Template[] = [
   { suffix: 'sus4', pcs: [0, 5, 7] },
   { suffix: 'sus2', pcs: [0, 2, 7] },
   { suffix: 'dim', pcs: [0, 3, 6] },
+  { suffix: 'dim7', pcs: [0, 3, 6, 9] },
+  { suffix: 'm7♭5', pcs: [0, 3, 6, 10] },
   { suffix: '5', pcs: [0, 7] },
 ]
 

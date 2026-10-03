@@ -1,6 +1,6 @@
 import { STANDARD_TUNING, noteName, type Song, type SongNote } from '../model/song'
 
-export type Quality = 'maj' | 'min' | '7' | 'maj7' | 'min7' | 'sus2' | 'sus4' | 'dim' | 'm7b5'
+export type Quality = 'maj' | 'min' | '7' | 'maj7' | 'min7' | 'sus2' | 'sus4' | 'dim' | 'm7b5' | 'dim7' | 'aug' | 'mMaj7' | '6' | 'min6' | '9'
 export const QUALITIES: { id: Quality; label: string; name: string }[] = [
   { id: 'maj', label: '', name: 'Major' },
   { id: 'min', label: 'm', name: 'Minor' },
@@ -11,6 +11,12 @@ export const QUALITIES: { id: Quality; label: string; name: string }[] = [
   { id: 'sus4', label: 'sus4', name: 'Sus4' },
   { id: 'dim', label: 'dim', name: 'Diminished' },
   { id: 'm7b5', label: 'm7♭5', name: 'Half-diminished' },
+  { id: 'dim7', label: 'dim7', name: 'Diminished 7' },
+  { id: 'aug', label: 'aug', name: 'Augmented' },
+  { id: 'mMaj7', label: 'mMaj7', name: 'Minor-major 7' },
+  { id: '6', label: '6', name: 'Major 6' },
+  { id: 'min6', label: 'm6', name: 'Minor 6' },
+  { id: '9', label: '9', name: 'Dominant 9' },
 ]
 
 export interface Voicing {
@@ -57,17 +63,29 @@ const OPEN: Record<string, Voicing> = {
   '9-sus2': { frets: [-1, 0, 2, 2, 0, 0], fingers: [0, 0, 1, 2, 0, 0] },
   '9-sus4': { frets: [-1, 0, 2, 2, 3, 0], fingers: [0, 0, 1, 2, 3, 0] },
   '4-sus4': { frets: [0, 2, 2, 2, 0, 0], fingers: [0, 1, 2, 3, 0, 0] },
+  '9-6': { frets: [-1, 0, 2, 2, 2, 2], fingers: [0, 0, 1, 1, 1, 1] }, // A6
+  '4-6': { frets: [0, 2, 2, 1, 2, 0], fingers: [0, 2, 3, 1, 4, 0] }, // E6
+  '4-min6': { frets: [0, 2, 2, 0, 2, 0], fingers: [0, 2, 3, 0, 4, 0] }, // Em6
+  '9-9': { frets: [-1, 0, 2, 4, 2, 3], fingers: [0, 0, 1, 3, 2, 4] }, // A9
+  '4-9': { frets: [0, 2, 0, 1, 0, 2], fingers: [0, 2, 0, 1, 0, 3] }, // E9
+  '4-mMaj7': { frets: [0, 2, 1, 0, 0, 0], fingers: [0, 2, 1, 0, 0, 0] }, // EmMaj7
+  '9-mMaj7': { frets: [-1, 0, 2, 1, 1, 0], fingers: [0, 0, 3, 1, 2, 0] }, // AmMaj7
 }
 
 // Movable shapes: offsets from the barre fret, per string. Root on string 6 (E forms) or 5 (A forms).
-const E_FORMS: Partial<Record<Quality, Voicing>> = {
+export const E_FORMS: Partial<Record<Quality, Voicing>> = {
   maj: { frets: [0, 2, 2, 1, 0, 0], fingers: [1, 3, 4, 2, 1, 1] },
   min: { frets: [0, 2, 2, 0, 0, 0], fingers: [1, 3, 4, 1, 1, 1] },
   '7': { frets: [0, 2, 0, 1, 0, 0], fingers: [1, 3, 1, 2, 1, 1] },
   min7: { frets: [0, 2, 0, 0, 0, 0], fingers: [1, 3, 1, 1, 1, 1] },
   sus4: { frets: [0, 2, 2, 2, 0, 0], fingers: [1, 2, 3, 4, 1, 1] },
+  maj7: { frets: [0, -1, 1, 1, 0, -1], fingers: [1, 0, 3, 4, 2, 0] },
+  '6': { frets: [0, -1, 2, 1, 2, -1], fingers: [1, 0, 3, 2, 4, 0] },
+  min6: { frets: [0, -1, 2, 0, 2, -1], fingers: [1, 0, 3, 1, 4, 0] },
+  mMaj7: { frets: [0, -1, 1, 0, 0, -1], fingers: [1, 0, 2, 1, 1, 0] },
+  '9': { frets: [0, 2, 0, 1, 0, 2], fingers: [1, 3, 1, 2, 1, 4] },
 }
-const A_FORMS: Partial<Record<Quality, Voicing>> = {
+export const A_FORMS: Partial<Record<Quality, Voicing>> = {
   maj: { frets: [-1, 0, 2, 2, 2, 0], fingers: [0, 1, 2, 3, 4, 1] },
   min: { frets: [-1, 0, 2, 2, 1, 0], fingers: [0, 1, 3, 4, 2, 1] },
   '7': { frets: [-1, 0, 2, 0, 2, 0], fingers: [0, 1, 3, 1, 4, 1] },
@@ -77,6 +95,12 @@ const A_FORMS: Partial<Record<Quality, Voicing>> = {
   sus4: { frets: [-1, 0, 2, 2, 3, 0], fingers: [0, 1, 2, 3, 4, 1] },
   dim: { frets: [-1, 0, 1, 2, 1, -1], fingers: [0, 1, 2, 4, 3, 0] },
   m7b5: { frets: [-1, 0, 1, 0, 1, -1], fingers: [0, 1, 2, 1, 3, 0] },
+  dim7: { frets: [-1, 0, 1, -1, 1, 0], fingers: [0, 1, 2, 0, 3, 1] },
+  aug: { frets: [-1, 0, 3, 2, 2, -1], fingers: [0, 1, 4, 2, 3, 0] },
+  '6': { frets: [-1, 0, 2, 2, 2, 2], fingers: [0, 1, 3, 3, 3, 3] },
+  min6: { frets: [-1, 0, 2, 2, 1, 2], fingers: [0, 1, 3, 4, 2, 4] },
+  '9': { frets: [-1, 0, 2, 0, 0, 0], fingers: [0, 1, 3, 1, 1, 1] },
+  mMaj7: { frets: [-1, 0, 2, 1, 1, 0], fingers: [0, 1, 4, 2, 3, 1] },
 }
 
 function shifted(form: Voicing, fret: number): Voicing {
@@ -286,6 +310,45 @@ export const PRESETS: Preset[] = [
       { semis: 7, quality: '7' },
       { semis: 0, quality: 'maj7' },
       { semis: 0, quality: 'maj7' },
+    ],
+  },
+  {
+    id: 'rhythm-changes',
+    name: 'I – vi – ii – V (7ths)',
+    degrees: [
+      { semis: 0, quality: 'maj7' },
+      { semis: 9, quality: 'min7' },
+      { semis: 2, quality: 'min7' },
+      { semis: 7, quality: '7' },
+    ],
+  },
+  {
+    id: 'jazz-blues',
+    name: 'Jazz blues (7ths)',
+    degrees: [
+      { semis: 0, quality: '7' },
+      { semis: 5, quality: '7' },
+      { semis: 0, quality: '7' },
+      { semis: 0, quality: '7' },
+      { semis: 5, quality: '7' },
+      { semis: 5, quality: '7' },
+      { semis: 0, quality: '7' },
+      { semis: 9, quality: '7' },
+      { semis: 2, quality: 'min7' },
+      { semis: 7, quality: '7' },
+      { semis: 0, quality: '7' },
+      { semis: 7, quality: '7' },
+    ],
+  },
+  {
+    id: 'minor-251',
+    name: 'ii – V – i minor (m7♭5, 7, m7)',
+    minor: true,
+    degrees: [
+      { semis: 2, quality: 'm7b5' },
+      { semis: 7, quality: '7' },
+      { semis: 0, quality: 'min7' },
+      { semis: 0, quality: 'min7' },
     ],
   },
   {

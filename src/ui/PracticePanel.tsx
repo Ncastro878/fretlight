@@ -28,6 +28,7 @@ import {
   type StrumId,
 } from '../exercises/chords'
 import { starterRoutine, type RoutineRunner } from '../practice/routine'
+import { ARPEGGIOS, ARP_PATTERNS, ARP_SHAPES, buildArpeggio, type ArpSpec } from '../exercises/arpeggios'
 
 interface Props {
   transport: Transport
@@ -68,6 +69,11 @@ export function PracticePanel({ transport, song, onLoad, routine }: Props) {
   }, [transport, rampOn, rampStep, rampMax])
 
   const isLoaded = song.id === exercise.id
+
+  // Arpeggios
+  const [arp, setArp] = useState<ArpSpec>({ root: 9, arpId: 'min7', shape: 'pos6', pattern: 'updown', noteValue: 0.25, bpm: 80 })
+  const arpSong = useMemo(() => buildArpeggio(arp), [arp])
+  const updateArp = (patch: Partial<ArpSpec>) => setArp((a) => ({ ...a, ...patch }))
 
   // Chords
   const [chordRoot, setChordRoot] = useState(9)
@@ -217,6 +223,89 @@ export function PracticePanel({ transport, song, onLoad, routine }: Props) {
         <p className="dim small">
           Now at <b className="mono">{state.bpm} bpm</b>. The trainer needs a loop: load an exercise or lick, or set A and B on a song.
         </p>
+      </section>
+
+      <section>
+        <h3>Arpeggio builder</h3>
+        <div className="grid2">
+          <label>
+            <span className="dim small">Root</span>
+            <select value={arp.root} onChange={(e) => updateArp({ root: Number(e.target.value) })}>
+              {ROOT_NAMES.map((n, i) => (
+                <option key={n} value={i}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="dim small">Chord</span>
+            <select value={arp.arpId} onChange={(e) => updateArp({ arpId: e.target.value })}>
+              {['Triads', '7th chords'].map((g) => (
+                <optgroup key={g} label={g}>
+                  {ARPEGGIOS.filter((a) => a.group === g).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="dim small">Shape</span>
+            <select value={arp.shape} onChange={(e) => updateArp({ shape: e.target.value as ArpSpec['shape'], pattern: e.target.value.startsWith('sweep') ? 'sweep' : arp.pattern === 'sweep' ? 'updown' : arp.pattern })}>
+              {ARP_SHAPES.map((sh) => (
+                <option key={sh.id} value={sh.id} title={sh.help}>
+                  {sh.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {arp.shape === 'string' ? (
+            <label>
+              <span className="dim small">String</span>
+              <select value={arp.string ?? 0} onChange={(e) => updateArp({ string: Number(e.target.value) })}>
+                {['Low E', 'A', 'D', 'G', 'B', 'High e'].map((n, i) => (
+                  <option key={n} value={i}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label>
+              <span className="dim small">Pattern</span>
+              <select value={arp.pattern} onChange={(e) => updateArp({ pattern: e.target.value as ArpSpec['pattern'] })}>
+                {ARP_PATTERNS.map((pt) => (
+                  <option key={pt.id} value={pt.id} title={pt.help}>
+                    {pt.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            <span className="dim small">Note value</span>
+            <select value={arp.noteValue} onChange={(e) => updateArp({ noteValue: Number(e.target.value) })}>
+              {NOTE_VALUES.map((v) => (
+                <option key={v.name} value={v.beats}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="range">
+            <span className="dim small">
+              Tempo <b className="mono">{arp.bpm}</b>
+            </span>
+            <input type="range" min={40} max={200} step={2} value={arp.bpm} onChange={(e) => updateArp({ bpm: Number(e.target.value) })} />
+          </label>
+        </div>
+        <p className="dim small">{arpSong.blurb}</p>
+        <button className={`btn ${song.id === arpSong.id ? 'on' : 'primary'}`} onClick={() => onLoad(arpSong)}>
+          {song.id === arpSong.id ? '✓ Loaded · reload' : '▶ Load arpeggio'} · {arpSong.notes.length} notes
+        </button>
       </section>
 
       <section>
