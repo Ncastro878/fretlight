@@ -5,14 +5,39 @@ import type { Song } from '../model/song'
 import { CAMERA_PRESETS, type CameraPreset } from '../scene/CameraRig'
 import { LIBRARY } from '../songs'
 
-const SAMPLES = [
-  { label: 'Romance (Spanish Romance)', file: 'anonymous-romance.gp3' },
-  { label: 'Tárrega · Lágrima', file: 'tarrega-lagrima.gp3' },
-  { label: 'Bach · Bourrée in E minor', file: 'bach-bourree-e-minor.gp4' },
-  { label: 'Bach · Prelude BWV 999', file: 'bach-prelude-bwv999.gp' },
-  { label: 'Sor · Study Op. 60 No. 1', file: 'sor-op60-no1.gp4' },
-  { label: "Packington's Pound", file: 'packingtons-pound.gp4' },
-  { label: 'Greensleeves (GP3)', file: 'traditional-greensleeves.gp3' },
+const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }[] = [
+  {
+    title: 'Classical',
+    items: [
+      { label: 'Romance (Spanish Romance)', file: 'anonymous-romance.gp3' },
+      { label: 'Tárrega · Lágrima', file: 'tarrega-lagrima.gp3' },
+      { label: 'Bach · Bourrée in E minor', file: 'bach-bourree-e-minor.gp4' },
+      { label: 'Bach · Prelude BWV 999', file: 'bach-prelude-bwv999.gp' },
+      { label: 'Sor · Study Op. 60 No. 1', file: 'sor-op60-no1.gp4' },
+      { label: "Packington's Pound", file: 'packingtons-pound.gp4' },
+      { label: 'Greensleeves (GP3)', file: 'traditional-greensleeves.gp3' },
+    ],
+  },
+  {
+    title: 'Rock',
+    items: [
+      { label: 'Metallica · Enter Sandman', file: 'rock/metallica--enter-sandman.gp3' },
+      { label: 'Metallica · Nothing Else Matters', file: 'rock/metallica--nothing-else-matters.gp4' },
+      { label: 'Metallica · Master of Puppets', file: 'rock/metallica--master-of-puppets.gp3' },
+      { label: 'Metallica · One', file: 'rock/metallica--one.gp3' },
+      { label: 'Metallica · Fade to Black', file: 'rock/metallica--fade-to-black.gp4' },
+      { label: 'Metallica · Seek and Destroy', file: 'rock/metallica--seek-and-destroy.gp3' },
+      { label: 'Metallica · For Whom the Bell Tolls', file: 'rock/metallica--for-whom-the-bell-tolls.gp3' },
+      { label: 'blink-182 · All the Small Things', file: 'rock/blink-182--all-the-small-things.gp3' },
+      { label: 'blink-182 · Dammit', file: 'rock/blink-182--dammit.gp3' },
+      { label: "blink-182 · What's My Age Again", file: 'rock/blink-182--what-s-my-age-again.gp3' },
+      { label: 'blink-182 · First Date', file: 'rock/blink-182--first-date.gp3' },
+      { label: 'blink-182 · I Miss You', file: 'rock/blink-182--i-miss-you.gp4' },
+      { label: "blink-182 · Adam's Song", file: 'rock/blink-182--adam-s-song.gp3' },
+      { label: 'Polyphia · Bloodbath (8-string)', file: 'rock/polyphia--bloodbat.gpx' },
+      { label: 'Polyphia · Ignite', file: 'rock/polyphia--ignite.gp5' },
+    ],
+  },
 ]
 
 interface Props {
@@ -64,7 +89,7 @@ export function LeftPanel(p: Props) {
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}samples/${file}`)
       if (!res.ok) throw new Error(`Could not fetch ${file}`)
-      await loadBuffer(await res.arrayBuffer(), file)
+      await loadBuffer(await res.arrayBuffer(), file.split('/').pop() ?? file)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
@@ -162,14 +187,18 @@ export function LeftPanel(p: Props) {
         <p className="dim small">
           Nothing is uploaded; files are read in your browser. ASCII tabs have no rhythm, so they play as even eighth notes.
         </p>
-        <div className="dim small">Or try a sample Guitar Pro file:</div>
-        <div className="row">
-          {SAMPLES.map((s) => (
-            <button key={s.file} className="btn small" onClick={() => void onSample(s.file)} title={s.file}>
-              {s.label}
-            </button>
-          ))}
-        </div>
+        {SAMPLE_GROUPS.map((g) => (
+          <div key={g.title} className="sample-group">
+            <div className="dim small">{g.title} tabs:</div>
+            <div className="row">
+              {g.items.map((s) => (
+                <button key={s.file} className="btn small" onClick={() => void onSample(s.file)} title={s.file}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       <section>
