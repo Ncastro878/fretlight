@@ -1,0 +1,7 @@
+node_modules
+dist
+.vercel
+.DS_Store
+*.local
+# raw test downloads (some fixtures are not redistributable)
+/samples/
