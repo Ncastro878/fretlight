@@ -101,3 +101,11 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
   .app.mobile .transport { padding: 6px 10px; gap: 4px; }
   .app.mobile .rail { height: 14px; }
 }
+
+.tabs { align-self: stretch; }
+.tabs .seg-btn { flex: 1; font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+.grid2 label, .range { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.panel select { background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px; font: inherit; width: 100%; }
+.range input[type=range] { width: 100%; accent-color: var(--accent); }
+.lick-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }

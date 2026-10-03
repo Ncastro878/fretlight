@@ -1,3 +1,10 @@
+export interface Bend {
+  /** How far the pitch rises, in semitones. 2 = full step, 1 = half step, 0.5 = quarter. */
+  semitones: number
+  /** Bend up and then back down to the fretted pitch within the note. */
+  release?: boolean
+}
+
 export interface SongNote {
   /** Start time in beats (quarter notes) from the beginning of the song. */
   time: number
@@ -9,6 +16,46 @@ export interface SongNote {
   fret: number
   /** Left-hand finger: 1 index, 2 middle, 3 ring, 4 pinky. Undefined for open strings or unknown. */
   finger?: number
+  bend?: Bend
+  /** Legato slide: the pitch glides from `fret` to this fret during the note. */
+  slideTo?: number
+  vibrato?: boolean
+  /** Sounded with a hammer-on or pull-off from the previous note on this string. No pick attack. */
+  hammer?: boolean
+  /** Fret the hammer-on or pull-off came from, for drawing the link. */
+  hammerFromFret?: number
+  /** Right-hand tap. Drawn with a T. */
+  tap?: boolean
+  palmMute?: boolean
+  letRing?: boolean
+}
+
+export interface Articulation {
+  bend?: Bend
+  /** Semitones the pitch slides by the end of the note (negative for downward). */
+  slide?: number
+  vibrato?: boolean
+  hammer?: boolean
+  palmMute?: boolean
+  letRing?: boolean
+}
+
+export function articulationOf(n: SongNote): Articulation | undefined {
+  if (!n.bend && n.slideTo === undefined && !n.vibrato && !n.hammer && !n.tap && !n.palmMute && !n.letRing) return undefined
+  return {
+    bend: n.bend,
+    slide: n.slideTo !== undefined ? n.slideTo - n.fret : undefined,
+    vibrato: n.vibrato,
+    hammer: n.hammer || n.tap,
+    palmMute: n.palmMute,
+    letRing: n.letRing,
+  }
+}
+
+export function bendLabel(semitones: number): string {
+  if (semitones >= 1.9) return semitones >= 2.9 ? '1½' : 'full'
+  if (semitones >= 0.9) return '½'
+  return '¼'
 }
 
 export interface Song {

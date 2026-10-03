@@ -4,6 +4,8 @@ import { parseAsciiTab } from '../import/asciiTab'
 import type { Song } from '../model/song'
 import { CAMERA_PRESETS, type CameraPreset } from '../scene/CameraRig'
 import { LIBRARY } from '../songs'
+import { PracticePanel } from './PracticePanel'
+import type { Transport } from '../player/transport'
 
 const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }[] = [
   {
@@ -70,8 +72,12 @@ function countNotes(score: Awaited<ReturnType<typeof parseScore>>, trackIndex: n
 }
 
 interface Props {
+  transport: Transport
   song: Song
   onSelectSong: (song: Song) => void
+  onLoadExercise: (song: Song) => void
+  tab: 'songs' | 'practice'
+  onTab: (t: 'songs' | 'practice') => void
   preset: CameraPreset
   onPreset: (p: CameraPreset) => void
   showUpcoming: boolean
@@ -138,6 +144,17 @@ export function LeftPanel(p: Props) {
 
   return (
     <aside className="panel left">
+      <div className="seg tabs">
+        <button className={`seg-btn ${p.tab === 'songs' ? 'on' : ''}`} onClick={() => p.onTab('songs')}>
+          ♫ Songs
+        </button>
+        <button className={`seg-btn ${p.tab === 'practice' ? 'on' : ''}`} onClick={() => p.onTab('practice')}>
+          ⚡ Practice
+        </button>
+      </div>
+      {p.tab === 'practice' && <PracticePanel transport={p.transport} song={p.song} onLoad={p.onLoadExercise} />}
+      {p.tab === 'songs' && (
+      <>
       <section>
         <h3>Song library</h3>
         <ul className="song-list">
@@ -232,6 +249,9 @@ export function LeftPanel(p: Props) {
           </div>
         ))}
       </section>
+
+      </>
+      )}
 
       <section>
         <h3>View</h3>

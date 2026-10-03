@@ -1,6 +1,9 @@
+import type { Articulation } from '../model/song'
+
 /**
  * Plucked-string synthesizer (Karplus-Strong). Each pitch is rendered once
  * into an AudioBuffer and cached, then played back with a gain envelope.
+ * Bends, slides, and vibrato are done by automating the playback rate.
  */
 export class Synth {
   readonly ctx: AudioContext
@@ -23,15 +26,51 @@ export class Synth {
   }
 
   /** Schedule a pluck at `when` (AudioContext time). The note rings a little past `durationSec`. */
-  pluck(midi: number, when: number, durationSec: number, velocity = 0.85): void {
+  pluck(midi: number, when: number, durationSec: number, velocity = 0.85, art?: Articulation): void {
     const buffer = this.bufferFor(midi)
     const source = this.ctx.createBufferSource()
     source.buffer = buffer
     const gain = this.ctx.createGain()
-    const releaseAt = when + Math.max(durationSec, 0.2) + 0.5
-    gain.gain.setValueAtTime(velocity, when)
-    gain.gain.setValueAtTime(velocity, releaseAt)
+    const held = Math.max(durationSec, 0.2)
+    let tail = 0.5
+    if (art?.palmMute) tail = 0.05
+    if (art?.letRing) tail = 1.6
+    const releaseAt = when + (art?.palmMute ? Math.min(held, 0.18) : held) + tail
+    const level = art?.hammer ? velocity * 0.6 : velocity
+    gain.gain.setValueAtTime(level, when)
+    gain.gain.setValueAtTime(level, releaseAt)
     gain.gain.linearRampToValueAtTime(0, releaseAt + 0.25)
+
+    // Pitch: playbackRate 2^(semitones/12) relative to the rendered pitch.
+    const rate = source.playbackRate
+    rate.setValueAtTime(1, when)
+    if (art?.bend) {
+      const peak = Math.pow(2, art.bend.semitones / 12)
+      const rise = Math.min(0.35, durationSec * 0.4)
+      rate.linearRampToValueAtTime(peak, when + rise)
+      if (art.bend.release) {
+        const fall = when + Math.max(rise + 0.08, durationSec * 0.75)
+        rate.setValueAtTime(peak, Math.max(when + rise, fall - 0.2))
+        rate.linearRampToValueAtTime(1, fall)
+      }
+    } else if (art?.slide) {
+      const target = Math.pow(2, art.slide / 12)
+      const start = when + Math.min(0.12, durationSec * 0.3)
+      rate.setValueAtTime(1, start)
+      rate.linearRampToValueAtTime(target, when + Math.max(start - when + 0.05, durationSec * 0.85))
+    }
+    let lfo: OscillatorNode | null = null
+    if (art?.vibrato) {
+      lfo = this.ctx.createOscillator()
+      lfo.frequency.value = 5.5
+      const depth = this.ctx.createGain()
+      depth.gain.setValueAtTime(0, when)
+      depth.gain.linearRampToValueAtTime(0.014, when + 0.25)
+      lfo.connect(depth).connect(rate)
+      lfo.start(when)
+      lfo.stop(releaseAt + 0.3)
+    }
+
     source.connect(gain).connect(this.master)
     source.start(when)
     source.stop(releaseAt + 0.3)
@@ -40,7 +79,21 @@ export class Synth {
     source.onended = () => {
       this.voices.delete(voice)
       gain.disconnect()
+      lfo?.disconnect()
     }
+  }
+
+  /** Metronome click. `accent` marks the first beat of the bar. */
+  click(when: number, accent: boolean): void {
+    const osc = this.ctx.createOscillator()
+    osc.type = 'square'
+    osc.frequency.value = accent ? 1760 : 1320
+    const g = this.ctx.createGain()
+    g.gain.setValueAtTime(accent ? 0.35 : 0.22, when)
+    g.gain.exponentialRampToValueAtTime(0.001, when + 0.045)
+    osc.connect(g).connect(this.master)
+    osc.start(when)
+    osc.stop(when + 0.06)
   }
 
   /** Fade out every sounding and scheduled note. Used on pause, seek, and stop. */

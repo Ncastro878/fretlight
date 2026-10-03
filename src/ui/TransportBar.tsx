@@ -13,7 +13,7 @@ interface Props {
 
 export function TransportBar({ transport, compact = false }: Props) {
   const state = useTransportState(transport)
-  const { song, playing, speed, loop, loopEnabled, length } = state
+  const { song, playing, speed, loop, loopEnabled, length, bpm, metronome } = state
   const [pos, setPos] = useState(0)
   const dragging = useRef(false)
   const rail = useRef<HTMLDivElement>(null)
@@ -21,7 +21,7 @@ export function TransportBar({ transport, compact = false }: Props) {
   useEffect(() => {
     let raf = 0
     const loop = () => {
-      if (!dragging.current) setPos(transport.position())
+      if (!dragging.current) setPos(Math.max(0, transport.position()))
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -107,7 +107,14 @@ export function TransportBar({ transport, compact = false }: Props) {
       <span className="dim"> / {formatClock(song, length, speed)}</span>
       <span className="dim"> · bar </span>
       <span>{formatBeat(song, pos)}</span>
+      <span className="dim"> · ♩ </span>
+      <span>{bpm}</span>
     </div>
+  )
+  const clickButton = (
+    <button className={`btn ${metronome ? 'on' : ''}`} onClick={() => transport.setMetronome(!metronome)} title="Metronome click">
+      ♩ Click
+    </button>
   )
   const loopButtons = (
     <div className="loop-controls">
@@ -141,6 +148,7 @@ export function TransportBar({ transport, compact = false }: Props) {
           </div>
           <div className="transport-row">
             {speedButtons}
+            {clickButton}
             <div className="spacer" />
             {loopButtons}
           </div>
@@ -149,6 +157,7 @@ export function TransportBar({ transport, compact = false }: Props) {
         <div className="transport-row">
           {playButtons}
           {speedButtons}
+          {clickButton}
           {clock}
           <div className="spacer" />
           {loopButtons}

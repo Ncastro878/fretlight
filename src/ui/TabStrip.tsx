@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { noteName } from '../model/song'
+import { bendLabel, noteName } from '../model/song'
 import type { Transport } from '../player/transport'
 import { lowerBound } from '../player/transport'
 import { FINGER_COLORS } from '../scene/geometry'
@@ -35,8 +35,8 @@ export function TabStrip({ transport }: Props) {
       ctx.clearRect(0, 0, w, h)
 
       const strings = song.tuning.length
-      const top = 18
-      const gap = (h - 36) / (strings - 1)
+      const top = 30
+      const gap = (h - 46) / (strings - 1)
       const yOf = (s: number) => top + (strings - 1 - s) * gap
       const pos = transport.position()
       const xOf = (beat: number) => PLAYHEAD_X + (beat - pos) * PX_PER_BEAT
@@ -79,6 +79,7 @@ export function TabStrip({ transport }: Props) {
 
       // Notes
       const notes = song.notes
+      const r = 8
       for (let i = lowerBound(notes, firstBeat - 2); i < notes.length && notes[i].time <= lastBeat; i++) {
         const n = notes[i]
         const x = xOf(n.time)
@@ -86,23 +87,93 @@ export function TabStrip({ transport }: Props) {
         const active = n.time <= pos && n.time + Math.max(n.duration, 0.25) > pos
         const past = n.time + n.duration < pos
         const color = FINGER_COLORS[n.fret === 0 ? 0 : (n.finger ?? 1)]
+        const durPx = Math.max(2, n.duration * PX_PER_BEAT - 3)
+        ctx.globalAlpha = past ? 0.35 : 1
+
         // Duration bar
         ctx.fillStyle = active ? color : 'rgba(255,255,255,0.08)'
-        ctx.globalAlpha = active ? 0.35 : 1
-        ctx.fillRect(x, y - 2, Math.max(2, n.duration * PX_PER_BEAT - 3), 4)
+        ctx.globalAlpha = active ? 0.35 : past ? 0.35 : 1
+        ctx.fillRect(x, y - 2, durPx, 4)
         ctx.globalAlpha = past ? 0.35 : 1
+
+        // Hammer-on / pull-off arc from the previous fret
+        if (n.hammerFromFret !== undefined) {
+          let j = i - 1
+          while (j >= 0 && (notes[j].string !== n.string || notes[j].time >= n.time)) j--
+          if (j >= 0) {
+            const x0 = xOf(notes[j].time)
+            ctx.strokeStyle = color
+            ctx.lineWidth = 1.2
+            ctx.beginPath()
+            ctx.moveTo(x0, y - r)
+            ctx.quadraticCurveTo((x0 + x) / 2, y - r - 10, x, y - r)
+            ctx.stroke()
+          }
+        }
+        // Slide: sloped line toward the target fret
+        if (n.slideTo !== undefined) {
+          const dir = n.slideTo > n.fret ? -1 : 1
+          ctx.strokeStyle = color
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.moveTo(x + r + 2, y + dir * 4)
+          ctx.lineTo(x + durPx - 2, y - dir * 4)
+          ctx.stroke()
+          ctx.fillStyle = color
+          ctx.font = '10px ui-monospace, Menlo, monospace'
+          ctx.fillText(String(n.slideTo), x + durPx + 1, y + 3)
+        }
+        // Vibrato: squiggle over the duration
+        if (n.vibrato) {
+          ctx.strokeStyle = color
+          ctx.lineWidth = 1.2
+          ctx.beginPath()
+          for (let px = x + r + 2; px < x + durPx; px += 2) {
+            const yy = y - r - 6 + Math.sin((px - x) * 0.9) * 2.5
+            if (px === x + r + 2) ctx.moveTo(px, yy)
+            else ctx.lineTo(px, yy)
+          }
+          ctx.stroke()
+        }
+        // Bend: arrow up with the amount
+        if (n.bend) {
+          ctx.strokeStyle = color
+          ctx.fillStyle = color
+          ctx.lineWidth = 1.5
+          const top = y - r - 12
+          ctx.beginPath()
+          ctx.moveTo(x + r, y - 2)
+          ctx.quadraticCurveTo(x + r + 8, y - 2, x + r + 8, top + 3)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.moveTo(x + r + 8, top - 1)
+          ctx.lineTo(x + r + 4, top + 5)
+          ctx.lineTo(x + r + 12, top + 5)
+          ctx.closePath()
+          ctx.fill()
+          ctx.font = '9px ui-monospace, Menlo, monospace'
+          ctx.fillText(bendLabel(n.bend.semitones) + (n.bend.release ? ' ↓' : ''), x + r + 14, top + 6)
+        }
+        if (n.palmMute) {
+          ctx.fillStyle = 'rgba(255,255,255,0.5)'
+          ctx.font = '9px ui-monospace, Menlo, monospace'
+          ctx.fillText('PM', x - 6, y + r + 11)
+        }
+
         // Fret bubble
         ctx.beginPath()
-        ctx.arc(x, y, active ? 10 : 8, 0, Math.PI * 2)
+        ctx.arc(x, y, active ? 10 : r, 0, Math.PI * 2)
         ctx.fillStyle = active ? color : '#161b24'
         ctx.fill()
         ctx.strokeStyle = color
         ctx.lineWidth = active ? 2 : 1.2
+        if (n.hammer || n.tap) ctx.setLineDash([2, 2])
         ctx.stroke()
+        ctx.setLineDash([])
         ctx.fillStyle = active ? '#0b0f14' : '#e6e9ef'
         ctx.font = `${active ? 'bold ' : ''}11px ui-monospace, Menlo, monospace`
         ctx.textAlign = 'center'
-        ctx.fillText(String(n.fret), x, y + 4)
+        ctx.fillText(n.tap ? `T${n.fret}` : String(n.fret), x, y + 4)
         ctx.textAlign = 'left'
         ctx.globalAlpha = 1
       }

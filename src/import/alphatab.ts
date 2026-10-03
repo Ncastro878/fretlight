@@ -45,14 +45,32 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
           if (note.isTieDestination || note.isDead || !note.isVisible) continue
           if (note.string < 1 || note.string > tuning.length) continue
           const finger = note.leftHandFinger
-          notes.push({
+          const out: SongNote = {
             time,
             duration,
             // alphaTab: string 1 is the lowest. Ours: index 0 is the lowest.
             string: note.string - 1,
             fret: note.fret,
             finger: finger >= 1 && finger <= 4 ? finger : undefined,
-          })
+          }
+          // Bend points are in quarter tones; take the highest point reached.
+          if (note.bendPoints && note.bendPoints.length > 1) {
+            let peak = 0
+            for (const bp of note.bendPoints) peak = Math.max(peak, bp.value)
+            const last = note.bendPoints[note.bendPoints.length - 1].value
+            if (peak > 0) out.bend = { semitones: peak / 2, release: last < peak }
+          }
+          // slideOutType: 1 shift, 2 legato (both glide to the next note on the string)
+          if ((note.slideOutType === 1 || note.slideOutType === 2) && note.slideTarget) out.slideTo = note.slideTarget.fret
+          if (note.vibrato !== 0 || beat.vibrato !== 0) out.vibrato = true
+          if (note.isHammerPullDestination && note.hammerPullOrigin) {
+            out.hammer = true
+            out.hammerFromFret = note.hammerPullOrigin.fret
+          }
+          if (note.isLeftHandTapped || beat.tap) out.tap = true
+          if (note.isPalmMute) out.palmMute = true
+          if (note.isLetRing) out.letRing = true
+          notes.push(out)
         }
       }
     }

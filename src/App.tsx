@@ -20,6 +20,7 @@ export default function App() {
   const { song } = useTransportState(transport)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches)
   const [drawer, setDrawer] = useState<Drawer>('none')
+  const [tab, setTab] = useState<'songs' | 'practice'>(params.get('tab') === 'practice' ? 'practice' : 'songs')
   const [preset, setPreset] = useState<CameraPreset>(() => {
     const v = params.get('view')
     if (v && v in CAMERA_PRESETS) return v as CameraPreset
@@ -50,6 +51,10 @@ export default function App() {
     transport.setSong(s)
     if (isMobile) setDrawer('none')
   }
+  const loadExercise = (s: Song) => {
+    transport.setSong(s, { loopAll: true })
+    if (isMobile) setDrawer('none')
+  }
   const choosePreset = (p: CameraPreset) => {
     setPreset(p)
     setPresetNonce((n) => n + 1)
@@ -75,7 +80,7 @@ export default function App() {
         {isMobile && (
           <div className="mobile-bar">
             <button className={`btn small ${drawer === 'songs' ? 'on' : ''}`} onClick={() => toggleDrawer('songs')}>
-              ♫ Songs
+              ♫ Library
             </button>
             <button className={`btn small ${drawer === 'notes' ? 'on' : ''}`} onClick={() => toggleDrawer('notes')}>
               ● Notes
@@ -90,8 +95,12 @@ export default function App() {
         )}
         {(!isMobile || drawer === 'songs') && (
           <LeftPanel
+            transport={transport}
             song={song}
             onSelectSong={selectSong}
+            onLoadExercise={loadExercise}
+            tab={tab}
+            onTab={setTab}
             preset={preset}
             onPreset={choosePreset}
             showUpcoming={showUpcoming}
