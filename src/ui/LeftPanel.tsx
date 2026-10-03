@@ -40,6 +40,35 @@ const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }
   },
 ]
 
+/**
+ * Guess the track a guitarist wants: skip vocal and bass lines when possible,
+ * then take the one with the most notes.
+ */
+function pickDefaultTrack(score: Awaited<ReturnType<typeof parseScore>>, tracks: ImportedTrack[]): number {
+  const isVocal = (t: ImportedTrack) => /vocal|voice|voz|sing|lyric/i.test(t.name)
+  const isBass = (t: ImportedTrack) => t.strings <= 5 || /bass/i.test(t.name)
+  const candidates = tracks.filter((t) => !isVocal(t) && !isBass(t))
+  const pool = candidates.length ? candidates : tracks.filter((t) => !isVocal(t)).length ? tracks.filter((t) => !isVocal(t)) : tracks
+  let best = pool[0].index
+  let bestNotes = -1
+  for (const t of pool) {
+    const n = countNotes(score, t.index)
+    if (n > bestNotes) {
+      bestNotes = n
+      best = t.index
+    }
+  }
+  return best
+}
+
+function countNotes(score: Awaited<ReturnType<typeof parseScore>>, trackIndex: number): number {
+  let n = 0
+  for (const staff of score.tracks[trackIndex].staves) {
+    for (const bar of staff.bars) for (const v of bar.voices) for (const b of v.beats) n += b.notes.length
+  }
+  return n
+}
+
 interface Props {
   song: Song
   onSelectSong: (song: Song) => void
@@ -58,12 +87,13 @@ export function LeftPanel(p: Props) {
   const [error, setError] = useState<string | null>(null)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [pending, setPending] = useState<{ score: Awaited<ReturnType<typeof parseScore>>; tracks: ImportedTrack[]; name: string } | null>(null)
+  const [loaded, setLoaded] = useState<{ score: Awaited<ReturnType<typeof parseScore>>; tracks: ImportedTrack[]; name: string; trackIndex: number } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
   const addImported = (song: Song) => {
-    setImported((list) => [song, ...list].slice(0, 20))
+    // Switching tracks in the same file replaces its earlier entry.
+    setImported((list) => [song, ...list.filter((s) => s.blurb !== song.blurb)].slice(0, 20))
     p.onSelectSong(song)
     setError(null)
   }
@@ -74,12 +104,23 @@ export function LeftPanel(p: Props) {
       const score = await parseScore(data)
       const tracks = listStringedTracks(score)
       if (tracks.length === 0) throw new Error('No guitar or bass tracks in that file.')
-      if (tracks.length === 1) addImported(scoreToSong(score, tracks[0].index, name))
-      else setPending({ score, tracks, name })
+      const trackIndex = pickDefaultTrack(score, tracks)
+      addImported(scoreToSong(score, trackIndex, name))
+      setLoaded({ score, tracks, name, trackIndex })
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(null)
+    }
+  }
+
+  const switchTrack = (trackIndex: number) => {
+    if (!loaded) return
+    try {
+      addImported(scoreToSong(loaded.score, trackIndex, loaded.name))
+      setLoaded({ ...loaded, trackIndex })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -137,26 +178,17 @@ export function LeftPanel(p: Props) {
             e.target.value = ''
           }}
         />
-        {pending && (
-          <div className="track-pick">
-            <div className="dim">Pick a track from {pending.name}:</div>
-            {pending.tracks.map((t) => (
-              <button
-                key={t.index}
-                className="btn small"
-                onClick={() => {
-                  try {
-                    addImported(scoreToSong(pending.score, t.index, pending.name))
-                    setPending(null)
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : String(e))
-                  }
-                }}
-              >
-                {t.name} · {t.strings} strings
-              </button>
-            ))}
-          </div>
+        {loaded && loaded.tracks.length > 1 && (
+          <label className="track-select">
+            <span className="dim small">Track in {loaded.name}:</span>
+            <select value={loaded.trackIndex} onChange={(e) => switchTrack(Number(e.target.value))}>
+              {loaded.tracks.map((t) => (
+                <option key={t.index} value={t.index}>
+                  {t.name} · {t.strings} strings
+                </option>
+              ))}
+            </select>
+          </label>
         )}
         {pasteOpen && (
           <div className="paste">

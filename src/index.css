@@ -50,6 +50,8 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .paste { display: flex; flex-direction: column; gap: 6px; }
 .paste textarea { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px; resize: vertical; }
 .sample-group { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.track-select { display: flex; flex-direction: column; gap: 4px; }
+.track-select select { background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px; font: inherit; }
 .track-pick { display: flex; flex-direction: column; gap: 4px; }
 .error { color: #f87171; font-size: 12px; }
 .notes, .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
