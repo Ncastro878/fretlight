@@ -33,6 +33,37 @@ export interface Chord {
   quality: Quality
 }
 
+/** Semitone intervals for each quality, used by overlays and lessons. */
+export const QUALITY_INTERVALS: Record<Quality, number[]> = {
+  maj: [0, 4, 7],
+  min: [0, 3, 7],
+  '7': [0, 4, 7, 10],
+  maj7: [0, 4, 7, 11],
+  min7: [0, 3, 7, 10],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7],
+  dim: [0, 3, 6],
+  m7b5: [0, 3, 6, 10],
+  dim7: [0, 3, 6, 9],
+  aug: [0, 4, 8],
+  mMaj7: [0, 3, 7, 11],
+  '6': [0, 4, 7, 9],
+  min6: [0, 3, 7, 9],
+  '9': [0, 4, 7, 10, 2],
+}
+
+const NOTE_INDEX: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 }
+
+/** Parse a label like "F#m7" back into a chord, or null if it is not one. */
+export function parseChordName(name: string): Chord | null {
+  const m = /^([A-G][#b]?)(.*)$/.exec(name.trim())
+  if (!m) return null
+  const root = NOTE_INDEX[m[1]]
+  if (root === undefined) return null
+  const q = QUALITIES.find((x) => x.label === m[2])
+  return q ? { root, quality: q.id } : null
+}
+
 export function chordName(c: Chord): string {
   return noteName(c.root, false) + (QUALITIES.find((q) => q.id === c.quality)?.label ?? '')
 }

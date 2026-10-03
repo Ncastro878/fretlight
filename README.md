@@ -17,6 +17,8 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 - **Scrolling tab strip** under the 3D view with fret numbers approaching a playhead.
 - **Transport**: play/pause, speeds from 0.25x to 1.5x, bar-snapped A/B loop, scrub bar, keyboard shortcuts (Space, arrows, A, B, L).
 - **Song library** of public domain pieces: Ode to Joy, House of the Rising Sun, Greensleeves, Für Elise, Moonlight Sonata.
+- **Learn tab**: a five-course curriculum (Foundations, Scales and Keys, Harmony, Technique, Styles), 18 lessons, 73 steps. Every step loads something onto the neck and plays it: interval pairs, triads and inversions, scale positions with the key lit, modes over a drone, progressions with the current chord's tones lit, seventh chords, picking and legato drills with the speed trainer, sweep shapes, strum patterns, and blues, rock, and shred vocabulary. Includes a note-naming drill. Progress is saved in the browser.
+- **Neck overlays**: Key (every in-key note, roots highlighted) or Chord tones (root, third, fifth of the chord playing right now, following the song's sections).
 - **Practice tab** with a scale builder: any root, 13 scales and modes, 3-note-per-string positions, pentatonic boxes and CAGED-style windows, one-string runs, and picking patterns (up/down, groups of 3 and 4, thirds, string skipping) at any note value and tempo. Exercises loop by default.
 - **Speed trainer**: add a few bpm every time the loop wraps until a ceiling, plus a metronome click and a one-bar count-in.
 - **Licks and warm-ups** written in the app's tab notation: blues, rock, classic-rock player styles, country, metal, shred, and warm-ups, mostly in A around the 5th position.

@@ -24,7 +24,7 @@ export default function App() {
   const { song } = useTransportState(transport)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches)
   const [drawer, setDrawer] = useState<Drawer>('none')
-  const [tab, setTab] = useState<'songs' | 'practice'>(params.get('tab') === 'practice' ? 'practice' : 'songs')
+  const [tab, setTab] = useState<'songs' | 'practice' | 'learn'>(params.get('tab') === 'practice' ? 'practice' : params.get('tab') === 'learn' || params.get('lesson') ? 'learn' : 'songs')
   const [preset, setPreset] = useState<CameraPreset>(() => {
     const v = params.get('view')
     if (v && v in CAMERA_PRESETS) return v as CameraPreset
@@ -35,7 +35,7 @@ export default function App() {
   const [showUpcoming, setShowUpcoming] = useState(true)
   const [showFingers, setShowFingers] = useState(true)
   const [showTab, setShowTab] = useState(true)
-  const [showKey, setShowKey] = useState(false)
+  const [overlay, setOverlay] = useState<'none' | 'key' | 'chord'>('none')
   const routine = useRoutine(transport)
   const [loadedScore, setLoadedScore] = useState<LoadedScore | null>(null)
   const switchPart = (trackIndex: number) => {
@@ -55,8 +55,17 @@ export default function App() {
   }
   // Parts only apply while the imported song is the one playing.
   const partsFor = loadedScore && song.blurb === `Imported from ${loadedScore.fileName}` ? loadedScore : null
-  const keyGuess = useMemo(() => (showKey ? detectKey(song) : null), [showKey, song])
-  const chords = useMemo(() => (showKey ? detectChords(song) : null), [showKey, song])
+  const keyGuess = useMemo(() => (overlay !== 'none' ? detectKey(song) : null), [overlay, song])
+  const chords = useMemo(() => (overlay !== 'none' ? detectChords(song) : null), [overlay, song])
+  const loadStep = (s: Song, opts: { loop?: boolean; bpm?: number; metronome?: boolean; ramp?: { stepBpm: number; maxBpm: number } | null; play?: boolean } = {}) => {
+    transport.setSong(s, { loopAll: opts.loop ?? true })
+    if (opts.bpm) transport.setBpm(opts.bpm)
+    else transport.setSpeed(1)
+    if (opts.metronome !== undefined) transport.setMetronome(opts.metronome)
+    if (opts.ramp !== undefined) transport.setRamp(opts.ramp)
+    if (opts.play) void transport.play()
+    if (isMobile) setDrawer('none')
+  }
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY)
@@ -87,6 +96,10 @@ export default function App() {
     if (isMobile) setDrawer('none')
   }
   const toggleDrawer = (d: Drawer) => setDrawer((cur) => (cur === d ? 'none' : d))
+  const applyStepSettings = (st: { overlay?: 'none' | 'key' | 'chord'; view?: CameraPreset }) => {
+    if (st.overlay) setOverlay(st.overlay)
+    if (st.view) choosePreset(st.view)
+  }
 
   return (
     <div className={`app ${isMobile ? 'mobile' : ''}`}>
@@ -96,7 +109,7 @@ export default function App() {
           <div className="dim small">
             {song.title}
             {song.composer ? ` · ${song.composer}` : ''} · {song.tempo} bpm · {song.notes.length} notes
-            {keyGuess && <span className="key-badge"> · key of {keyGuess.name}</span>}
+            {overlay === 'key' && keyGuess && <span className="key-badge"> · key of {keyGuess.name}</span>}
           </div>
         </div>
         <div className="row">
@@ -108,7 +121,7 @@ export default function App() {
       </header>
 
       <div className="stage">
-        <Scene transport={transport} song={song} preset={preset} presetNonce={presetNonce} showUpcoming={showUpcoming} showFingers={showFingers} keyGuess={keyGuess} />
+        <Scene transport={transport} song={song} preset={preset} presetNonce={presetNonce} showUpcoming={showUpcoming} showFingers={showFingers} keyGuess={keyGuess} overlay={overlay} />
         {routine.running && routine.steps[routine.index] && (
           <div className="routine-banner">
             <span className="dim small">
@@ -150,8 +163,10 @@ export default function App() {
             onTab={setTab}
             onScoreLoaded={setLoadedScore}
             routine={routine}
-            showKey={showKey}
-            onShowKey={setShowKey}
+            overlay={overlay}
+            onOverlay={setOverlay}
+            onStepSettings={applyStepSettings}
+            onLoadStep={loadStep}
             preset={preset}
             onPreset={choosePreset}
             showUpcoming={showUpcoming}

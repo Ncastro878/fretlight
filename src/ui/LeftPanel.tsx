@@ -5,6 +5,7 @@ import type { Song } from '../model/song'
 import { CAMERA_PRESETS, type CameraPreset } from '../scene/CameraRig'
 import { LIBRARY } from '../songs'
 import { PracticePanel } from './PracticePanel'
+import { LearnPanel, type StepSettings } from './LearnPanel'
 import type { RoutineRunner } from '../practice/routine'
 import type { Transport } from '../player/transport'
 
@@ -78,11 +79,13 @@ interface Props {
   onLoadExercise: (song: Song) => void
   /** A Guitar Pro / MusicXML file was parsed; the app owns part switching from here. */
   onScoreLoaded: (loaded: LoadedScore) => void
-  tab: 'songs' | 'practice'
-  onTab: (t: 'songs' | 'practice') => void
+  tab: 'songs' | 'practice' | 'learn'
+  onTab: (t: 'songs' | 'practice' | 'learn') => void
   routine: RoutineRunner
-  showKey: boolean
-  onShowKey: (v: boolean) => void
+  overlay: 'none' | 'key' | 'chord'
+  onOverlay: (v: 'none' | 'key' | 'chord') => void
+  onStepSettings: (s: StepSettings) => void
+  onLoadStep: (song: Song, opts?: { loop?: boolean; bpm?: number; metronome?: boolean; ramp?: { stepBpm: number; maxBpm: number } | null; play?: boolean }) => void
   preset: CameraPreset
   onPreset: (p: CameraPreset) => void
   showUpcoming: boolean
@@ -139,6 +142,9 @@ export function LeftPanel(p: Props) {
   return (
     <aside className="panel left">
       <div className="seg tabs">
+        <button className={`seg-btn ${p.tab === 'learn' ? 'on' : ''}`} onClick={() => p.onTab('learn')}>
+          🎓 Learn
+        </button>
         <button className={`seg-btn ${p.tab === 'songs' ? 'on' : ''}`} onClick={() => p.onTab('songs')}>
           ♫ Songs
         </button>
@@ -146,6 +152,7 @@ export function LeftPanel(p: Props) {
           ⚡ Practice
         </button>
       </div>
+      {p.tab === 'learn' && <LearnPanel transport={p.transport} song={p.song} onSettings={p.onStepSettings} onLoad={p.onLoadStep} />}
       {p.tab === 'practice' && <PracticePanel transport={p.transport} song={p.song} onLoad={p.onLoadExercise} routine={p.routine} />}
       {p.tab === 'songs' && (
       <>
@@ -254,9 +261,16 @@ export function LeftPanel(p: Props) {
         <label className="check">
           <input type="checkbox" checked={p.showTab} onChange={(e) => p.onShowTab(e.target.checked)} /> Scrolling tab strip
         </label>
-        <label className="check">
-          <input type="checkbox" checked={p.showKey} onChange={(e) => p.onShowKey(e.target.checked)} /> Key &amp; chord overlay
-        </label>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <span className="dim small">Neck overlay</span>
+          <div className="seg">
+            {(['none', 'key', 'chord'] as const).map((m) => (
+              <button key={m} className={`seg-btn ${p.overlay === m ? 'on' : ''}`} onClick={() => p.onOverlay(m)} title={m === 'key' ? 'Light every note in the detected key' : m === 'chord' ? 'Light the tones of the chord playing now (progressions and lessons)' : ''}>
+                {m === 'none' ? 'Off' : m === 'key' ? 'Key' : 'Chord tones'}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="dim small">Drag to orbit · scroll to zoom · right-drag to pan</p>
       </section>
     </aside>
