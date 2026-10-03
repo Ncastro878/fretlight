@@ -1,3 +1,7 @@
+# Fretlight + Tone Lab
+
+Two guitar learning apps in one repo. **Fretlight** (at `/`) teaches songs, scales, licks, and chords on a 3D neck. **Tone Lab** (at `/tone/`) teaches how guitar tone is built: a pedalboard you hear, see, and take apart.
+
 # Fretlight
 
 Learn songs on a 3D guitar neck. Pick a song, press play, and watch the frets light up where your fingers go, in time with the music. Slow it down, scrub, and loop the bars you are stuck on.
@@ -24,6 +28,20 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 - **Import** Guitar Pro files (.gp3, .gp4, .gp5, .gpx, .gp) and MusicXML via [alphaTab](https://www.alphatab.net/), with a track picker for multi-track files. Files are parsed in the browser and never uploaded. Seven sample classical guitar files are bundled.
 - **Paste ASCII tab** as a best-effort import. ASCII tabs have no rhythm, so each column plays as an eighth note.
 - **Shareable links**: `?song=<id>&at=<beat>&view=lap|neck|front|top&play=1`.
+
+# Tone Lab
+
+Live at `/tone/`. A signal chain simulator with lessons.
+
+- **15 effects and amps** built from Web Audio nodes: clean boost, noise gate, compressor, overdrive (soft clip), distortion (hard clip), fuzz (asymmetric), 3-band EQ, wah/auto-wah, chorus, phaser, tremolo, delay with dark repeats, convolution reverb with synthesized rooms, a four-model amp with tone stack and presence, and a speaker cabinet with mic position.
+- **3D pedalboard**: pedals in chain order with knobs that reflect their settings, LEDs, footswitches to bypass, cable pulses that follow the signal level. Click a pedal to inspect it; reorder with Earlier / Later.
+- **Scopes**: waveform and spectrum of the dry guitar (grey) against the selected pedal's output (yellow), plus the clipping curve of any drive stage or amp.
+- **Sources**: six built-in riffs (clean arpeggios, power chords, blues lick, funk stabs, slow melody, metal gallop) played by a plucked-string synth, or your own guitar through the mic or an audio interface.
+- **Ten lessons**: signal chain order, gain staging, overdrive vs distortion vs fuzz, EQ and the mids, compression, modulation, delay, reverb, amp and cab, and building the classics. Each step loads a chain and a riff and gives you one thing to turn.
+- **Ten tone recipes**: clean sparkle, blues crunch, classic rock lead, 80s chorus, modern metal, ambient swells, country twang, dotted-eighth delay, woolly fuzz, funk rhythm.
+- **A/B bypass** to hear the dry guitar against the chain at any moment.
+
+Tone Lab lives entirely in `src/tone/` with its own entry (`tone/index.html`) and shares no code with Fretlight, so it can be moved to its own repo by copying that folder and the entry.
 
 ## Run it
 

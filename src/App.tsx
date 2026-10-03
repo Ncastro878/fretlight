@@ -99,7 +99,12 @@ export default function App() {
             {keyGuess && <span className="key-badge"> · key of {keyGuess.name}</span>}
           </div>
         </div>
-        <div className="dim small tagline">Watch the frets light up, slow it down, loop the hard part.</div>
+        <div className="row">
+          <span className="dim small tagline">Watch the frets light up, slow it down, loop the hard part.</span>
+          <a className="btn small" href="/tone/" title="Build and understand guitar tones">
+            Tone Lab →
+          </a>
+        </div>
       </header>
 
       <div className="stage">
