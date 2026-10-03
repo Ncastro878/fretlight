@@ -15,14 +15,14 @@ export const CAMERA_PRESETS: Record<CameraPreset, { label: string; position: [nu
   },
   neck: {
     label: 'Neck close-up',
-    position: [1.6, 1.7, 1.5],
-    target: [1.3, 0, 0],
+    position: [1.7, 2.3, 1.5],
+    target: [1.4, 0, 0],
     help: 'Close on the first five frets.',
   },
   front: {
     label: 'Teacher view',
-    position: [3.4, 1.9, -4.8],
-    target: [3.0, 0, 0],
+    position: [2.4, 3.4, -3.8],
+    target: [2.2, 0, 0],
     help: 'Facing the player, as if watching a teacher.',
   },
   top: {
