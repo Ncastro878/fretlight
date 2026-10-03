@@ -58,8 +58,20 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
     }
   }
 
-  const first = score.masterBars[0]
-  const beatsPerBar = first ? (first.timeSignatureNumerator * 4) / first.timeSignatureDenominator : 4
+  // Use the most common time signature; the first bar is often a short pickup.
+  const counts = new Map<number, number>()
+  for (const mb of score.masterBars) {
+    const bpb = (mb.timeSignatureNumerator * 4) / mb.timeSignatureDenominator
+    counts.set(bpb, (counts.get(bpb) ?? 0) + 1)
+  }
+  let beatsPerBar = 4
+  let best = 0
+  for (const [bpb, n] of counts) {
+    if (n > best) {
+      best = n
+      beatsPerBar = bpb
+    }
+  }
   const title = score.title || fileName.replace(/\.[^.]+$/, '')
   const composer = score.artist || score.music || score.words || ''
 
