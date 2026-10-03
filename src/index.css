@@ -109,3 +109,20 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .panel select { background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px; font: inherit; width: 100%; }
 .range input[type=range] { width: 100%; accent-color: var(--accent); }
 .lick-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+
+.sections { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.chip { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; font-size: 11.5px; cursor: pointer; color: var(--dim); }
+.chip:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.chip.on { color: var(--text); border-color: rgba(255,255,255,0.3); }
+.chip.looped { color: var(--accent); border-color: var(--accent); }
+.slot { display: grid; grid-template-columns: 1fr 1.2fr 0.8fr auto; gap: 4px; align-items: center; }
+.slot .btn { padding: 4px 7px; }
+.routine-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.routine-step { display: grid; grid-template-columns: 1fr auto auto auto; gap: 4px; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; font-size: 12px; }
+.routine-step.on { border-color: var(--accent); }
+.routine-step .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routine-step input { width: 46px; background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 3px 4px; font: inherit; }
+.routine-banner { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 14px; display: flex; gap: 12px; align-items: center; z-index: 2; backdrop-filter: blur(8px); white-space: nowrap; }
+.app.mobile .routine-banner { top: 48px; left: 8px; right: 8px; transform: none; white-space: normal; flex-wrap: wrap; }
+.routine-banner .big { font-size: 20px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; }
+.key-badge { color: var(--accent); }

@@ -5,6 +5,7 @@ import type { Song } from '../model/song'
 import { CAMERA_PRESETS, type CameraPreset } from '../scene/CameraRig'
 import { LIBRARY } from '../songs'
 import { PracticePanel } from './PracticePanel'
+import type { RoutineRunner } from '../practice/routine'
 import type { Transport } from '../player/transport'
 
 const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }[] = [
@@ -78,6 +79,9 @@ interface Props {
   onLoadExercise: (song: Song) => void
   tab: 'songs' | 'practice'
   onTab: (t: 'songs' | 'practice') => void
+  routine: RoutineRunner
+  showKey: boolean
+  onShowKey: (v: boolean) => void
   preset: CameraPreset
   onPreset: (p: CameraPreset) => void
   showUpcoming: boolean
@@ -152,7 +156,7 @@ export function LeftPanel(p: Props) {
           ⚡ Practice
         </button>
       </div>
-      {p.tab === 'practice' && <PracticePanel transport={p.transport} song={p.song} onLoad={p.onLoadExercise} />}
+      {p.tab === 'practice' && <PracticePanel transport={p.transport} song={p.song} onLoad={p.onLoadExercise} routine={p.routine} />}
       {p.tab === 'songs' && (
       <>
       <section>
@@ -270,6 +274,9 @@ export function LeftPanel(p: Props) {
         </label>
         <label className="check">
           <input type="checkbox" checked={p.showTab} onChange={(e) => p.onShowTab(e.target.checked)} /> Scrolling tab strip
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={p.showKey} onChange={(e) => p.onShowKey(e.target.checked)} /> Key &amp; chord overlay
         </label>
         <p className="dim small">Drag to orbit · scroll to zoom · right-drag to pan</p>
       </section>

@@ -160,6 +160,125 @@ const LICK_DEFS: LickDef[] = [
     spec: '1/12t:t 1/5h 1/8h 1/12t:t 1/5h 1/8h 1/13t:t 1/5h 1/8h 1/13t:t 1/5h 1/8h 1/15t:t 1/5h 1/8h 1/15t:t 1/5h 1/8h 1/12t:t 1/5h 1/8h 1/12t:t 1/5h 1/8h',
     times: 2,
   },
+  // ---------- Classic rock players (in the style of) ----------
+  {
+    id: 'style-gilmour',
+    title: 'Gilmour-style slow bends',
+    style: 'Classic rock',
+    tempo: 66,
+    blurb: 'Long, slow bends with wide vibrato at the top, then a bend-and-release. Patience is the whole point. B minor pentatonic at the 7th fret.',
+    spec: '2/10b2~:h 1/10~:q 1/12b2~:h. 1/10:e 2/12b2r:h 2/10:q 3/11~:w',
+  },
+  {
+    id: 'style-slash',
+    title: 'Slash-style pentatonic run',
+    style: 'Classic rock',
+    tempo: 104,
+    blurb: 'Descending triplet run through the A minor box with a slide at the bottom. Loose and bluesy, not metronomic.',
+    spec: '1/8:t 1/5 2/8 2/5:t 3/7 3/5 4/7:t 4/5 5/7 5/5:t 6/8 6/5 6/5s7:e 6/7:e 5/5 5/7 4/5:q 4/7~:h',
+  },
+  {
+    id: 'style-mayer',
+    title: 'Mayer-style double stops',
+    style: 'Classic rock',
+    tempo: 92,
+    blurb: 'Hammered double stops on the G and B strings over an A chord. Thumb over the top for the bass. Hendrix taught Mayer this.',
+    spec: '3/6+2/5:e 3/7h+2/5:e 1/5:e 3/7+2/5:e 3/9+2/10:e 3/9+2/10:e 2/10h:e 1/9+2/10:q 3/7:e 4/7:e 5/0~:q',
+  },
+  {
+    id: 'style-clapton',
+    title: 'Clapton-style box shift',
+    style: 'Classic rock',
+    tempo: 96,
+    blurb: 'Box 1 up to the extended box with the slide on the G string. Woman-tone phrasing: bend into the root, not away from it.',
+    spec: '3/5:e 3/7s9:e 3/9:e 2/8 2/10 1/8 1/10b2~:q. 1/8:e 2/10 2/8 3/9 3/7 4/7~:h',
+  },
+  {
+    id: 'style-page',
+    title: 'Page-style blues rock lick',
+    style: 'Classic rock',
+    tempo: 100,
+    blurb: 'Pull-offs on the top strings, a quick slide, and a sloppy-on-purpose bend to finish.',
+    spec: '1/8:s 1/5h 2/8 1/5 2/8:s 2/5h 3/7 2/5 3/7:s 3/5h 4/7 3/5 4/7:e 4/5s7:e 3/7:e 2/8b2~:q.',
+  },
+  {
+    id: 'style-petrucci',
+    title: 'Petrucci-style alternate picking',
+    style: 'Classic rock',
+    tempo: 100,
+    blurb: 'Sixteenth-note 3NPS fragments that change direction every six notes. Strict alternate picking, start slow.',
+    spec: '6/5:s 6/7 6/8 5/5 5/7 5/8 5/7 5/5 6/8 6/7 6/5 6/7 5/5:s 5/7 5/8 4/5 4/7 4/9 4/7 4/5 5/8 5/7 5/5 5/7 4/5:s 4/7 4/9 3/5 3/7 3/9 3/7 3/5 4/9 4/7 4/5 4/7 3/5:s 3/7 3/9 2/5 2/6 2/8 2/6 2/5 3/9 3/7 3/5 3/7',
+  },
+  {
+    id: 'style-srv',
+    title: 'SRV-style turnaround',
+    style: 'Classic rock',
+    tempo: 100,
+    blurb: 'Texas blues in A: double stops sliding down, chromatic walk, hard vibrato on the root.',
+    spec: '2/5+1/5:e 2/5+1/5:e 3/6s5+2/5:e 3/5+2/5:e 4/7:e 4/6 4/5 4/4 5/7:e 5/6 5/5 5/4 6/5:e 6/4 5/0~:q. 2/5+1/5:e 3/6+2/5:e 5/0~:h',
+  },
+  {
+    id: 'style-angus',
+    title: 'Angus-style open-string lick',
+    style: 'Classic rock',
+    tempo: 120,
+    blurb: 'Pull-offs to the open B and e strings, A minor pentatonic in the open position. Loud and simple.',
+    spec: '1/3:t 1/0h 2/3 1/3:t 1/0h 2/3 2/3:t 2/0h 3/2 2/3:t 2/0h 3/2 3/2:t 3/0h 4/2 4/2:e 5/0~:q.',
+    times: 2,
+  },
+  // ---------- Country ----------
+  {
+    id: 'country-chicken',
+    title: 'Chicken pickin\'',
+    style: 'Country',
+    tempo: 112,
+    blurb: 'Muted "cluck" notes between open strings in A. Pick the muted notes with the pick, snap the open ones with a finger.',
+    spec: '1/5m:s 1/0 1/5m 1/0 2/5m:s 2/0 2/5m 2/0 3/6m:s 3/0 3/6m 3/0 2/5:e 1/5:e 3/6:e 5/0~:q',
+    times: 2,
+  },
+  {
+    id: 'country-bend',
+    title: 'Country pedal steel bend',
+    style: 'Country',
+    tempo: 90,
+    blurb: 'Hold the top string while bending the B string a whole step underneath, then release. Sounds like a pedal steel.',
+    spec: '2/8b2+1/5:q 2/8b2r+1/5:h 2/7b2+1/5:q 2/7b2r+1/5:h 1/5:e 2/5 3/6s7:e 3/7:e 4/7~:h',
+  },
+  {
+    id: 'country-banjo-roll',
+    title: 'Banjo roll on open strings',
+    style: 'Country',
+    tempo: 96,
+    blurb: 'Forward roll across G, B, and e with a hammer-on. Thumb, index, middle. Keep every note even.',
+    spec: '3/0:s 2/0 1/0 3/0 2/0 1/0 3/0 2/0 3/2h:s 2/0 1/0 3/2 2/0 1/0 3/0 2/0 4/0:s 3/0 2/0 1/0 4/2h 3/0 2/0 1/0 3/0:s 2/0 1/0 3/0 2/0 1/0 3/0 2/0',
+  },
+  // ---------- Metal ----------
+  {
+    id: 'metal-gallop',
+    title: 'Palm-muted gallop',
+    style: 'Metal',
+    tempo: 130,
+    blurb: 'Eighth plus two sixteenths on the low E, palm muted. The Iron Maiden engine. Keep the picking hand loose.',
+    spec: '6/0m:e 6/0m:s 6/0m 6/0m:e 6/0m:s 6/0m 6/0m:e 6/0m:s 6/0m 6/0m:e 6/0m:s 6/0m 6/0m:e 6/0m:s 6/0m 6/0m:e 6/0m:s 6/0m 6/3m:e 6/3m:s 6/3m 6/5m:e 6/5m:s 6/5m',
+    times: 2,
+  },
+  {
+    id: 'metal-power-chords',
+    title: 'Power chord riff',
+    style: 'Metal',
+    tempo: 120,
+    blurb: 'E5 chug with G5 and A5 accents. Downstrokes only, palm mute the chugs, open up the chords.',
+    spec: '6/0m+5/2m:e 6/0m+5/2m 6/0m+5/2m 6/3+5/5:e 6/3+5/5:e 6/0m+5/2m:e 6/0m+5/2m 6/5+5/7:e 6/0m+5/2m:e 6/0m+5/2m 6/0m+5/2m 6/3+5/5:e 6/1+5/3:q 6/0+5/2:h',
+    times: 2,
+  },
+  {
+    id: 'metal-harmonic-minor',
+    title: 'Harmonic minor run',
+    style: 'Metal',
+    tempo: 104,
+    blurb: 'E harmonic minor up the top strings with the raised 7th (D#). Yngwie and Randy Rhoads territory.',
+    spec: '3/9:s 3/11 3/12 2/12 2/13 2/15 1/12 1/14 1/15 1/16 1/15 1/14 1/12 2/15 2/13 2/12 3/12:s 3/11 3/9 4/9 4/10 4/12 3/9 3/11 3/12 2/12 2/13 2/15 1/12 1/14 1/15 1/16 1/19~:q',
+  },
   // ---------- Warm-ups ----------
   {
     id: 'warm-spider',
@@ -229,4 +348,4 @@ function build(def: LickDef): Song {
 }
 
 export const LICKS: Song[] = LICK_DEFS.map(build)
-export const LICK_STYLES = ['Blues', 'Rock', 'Shred', 'Warm-up']
+export const LICK_STYLES = ['Blues', 'Rock', 'Classic rock', 'Country', 'Metal', 'Shred', 'Warm-up']

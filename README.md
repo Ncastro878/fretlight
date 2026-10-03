@@ -15,7 +15,11 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 - **Song library** of public domain pieces: Ode to Joy, House of the Rising Sun, Greensleeves, Für Elise, Moonlight Sonata.
 - **Practice tab** with a scale builder: any root, 13 scales and modes, 3-note-per-string positions, pentatonic boxes and CAGED-style windows, one-string runs, and picking patterns (up/down, groups of 3 and 4, thirds, string skipping) at any note value and tempo. Exercises loop by default.
 - **Speed trainer**: add a few bpm every time the loop wraps until a ceiling, plus a metronome click and a one-bar count-in.
-- **Licks and warm-ups** written in the app's tab notation: blues, rock, shred, and warm-up sets in A around the 5th position.
+- **Licks and warm-ups** written in the app's tab notation: blues, rock, classic-rock player styles, country, metal, shred, and warm-ups, mostly in A around the 5th position.
+- **Chords**: a chord explorer (any root, nine qualities, open shapes with barre fallbacks) and a progression builder with presets (pop, 50s, 12-bar blues, ii–V–I, Andalusian, and more) in any key, eight strum and picking patterns, and editable chord slots. Each chord becomes a section chip you can loop.
+- **Routine builder**: chain songs, exercises, licks, and progressions with minutes per step. It plays each step on a loop and auto-advances with a countdown banner. Saved in the browser, with a 20-minute starter routine.
+- **Key and chord overlay** (toggle in View): detects the song's key, lights every in-key fret on the neck with roots highlighted, and prints detected chord names above the tab strip.
+- **Section markers** from Guitar Pro files (intro, solo, outro) appear as chips in the transport. Click one to loop that section.
 - **Articulations** in the model, the synth, the 3D neck, and the tab strip: bends (the string visibly pushes sideways, pitch glides), slides (the marker travels along the string), vibrato (the string shimmers), hammer-ons and pull-offs (linked markers, no pick attack), tapping, palm mute, and let ring. Imported Guitar Pro files bring their own articulations in.
 - **Import** Guitar Pro files (.gp3, .gp4, .gp5, .gpx, .gp) and MusicXML via [alphaTab](https://www.alphatab.net/), with a track picker for multi-track files. Files are parsed in the browser and never uploaded. Seven sample classical guitar files are bundled.
 - **Paste ASCII tab** as a best-effort import. ASCII tabs have no rhythm, so each column plays as an eighth note.

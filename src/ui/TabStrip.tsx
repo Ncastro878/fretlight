@@ -3,17 +3,22 @@ import { bendLabel, noteName } from '../model/song'
 import type { Transport } from '../player/transport'
 import { lowerBound } from '../player/transport'
 import { FINGER_COLORS } from '../scene/geometry'
+import type { ChordLabel } from '../analysis/key'
 
 interface Props {
   transport: Transport
+  /** Detected chord names to print above the bars, or null when the overlay is off. */
+  chords: ChordLabel[] | null
 }
 
 const PX_PER_BEAT = 72
 const PLAYHEAD_X = 150
 
 /** Scrolling tablature: upcoming notes slide toward the playhead on the left. */
-export function TabStrip({ transport }: Props) {
+export function TabStrip({ transport, chords }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const chordsRef = useRef(chords)
+  chordsRef.current = chords
 
   useEffect(() => {
     const el = canvas.current
@@ -62,6 +67,27 @@ export function TabStrip({ transport }: Props) {
         ctx.fillStyle = 'rgba(255,255,255,0.35)'
         ctx.font = '10px ui-monospace, Menlo, monospace'
         ctx.fillText(String(b + 1), x + 3, top - 8)
+      }
+
+      // Section names and chord labels along the top
+      ctx.font = 'bold 10px ui-monospace, Menlo, monospace'
+      for (const sec of song.sections ?? []) {
+        if (sec.beat < firstBeat - 8 || sec.beat > lastBeat) continue
+        const x = xOf(sec.beat)
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.85)'
+        ctx.fillRect(x, 2, 2, h - 4)
+        ctx.fillText(sec.name, x + 5, 11)
+      }
+      const chordList = chordsRef.current
+      if (chordList) {
+        ctx.font = 'bold 11px Inter, ui-sans-serif, system-ui, sans-serif'
+        for (const c of chordList) {
+          if (c.beat < firstBeat - 4 || c.beat > lastBeat) continue
+          const x = xOf(c.beat)
+          const active = c.beat <= pos
+          ctx.fillStyle = active ? '#e6e9ef' : 'rgba(230,233,239,0.5)'
+          ctx.fillText(c.name, x + 4, top - 18)
+        }
       }
 
       // Strings

@@ -8,6 +8,9 @@ import { LeftPanel } from './ui/LeftPanel'
 import { RightPanel } from './ui/RightPanel'
 import { TabStrip } from './ui/TabStrip'
 import { TransportBar } from './ui/TransportBar'
+import { useRoutine } from './practice/routine'
+import { detectChords, detectKey } from './analysis/key'
+import { formatSec } from './ui/PracticePanel'
 
 /** Shareable links: ?song=<id>&at=<beat>&view=lap|neck|front|top&play=1 */
 const params = new URLSearchParams(window.location.search)
@@ -31,6 +34,10 @@ export default function App() {
   const [showUpcoming, setShowUpcoming] = useState(true)
   const [showFingers, setShowFingers] = useState(true)
   const [showTab, setShowTab] = useState(true)
+  const [showKey, setShowKey] = useState(false)
+  const routine = useRoutine(transport)
+  const keyGuess = useMemo(() => (showKey ? detectKey(song) : null), [showKey, song])
+  const chords = useMemo(() => (showKey ? detectChords(song) : null), [showKey, song])
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY)
@@ -70,13 +77,29 @@ export default function App() {
           <div className="dim small">
             {song.title}
             {song.composer ? ` · ${song.composer}` : ''} · {song.tempo} bpm · {song.notes.length} notes
+            {keyGuess && <span className="key-badge"> · key of {keyGuess.name}</span>}
           </div>
         </div>
         <div className="dim small tagline">Watch the frets light up, slow it down, loop the hard part.</div>
       </header>
 
       <div className="stage">
-        <Scene transport={transport} song={song} preset={preset} presetNonce={presetNonce} showUpcoming={showUpcoming} showFingers={showFingers} />
+        <Scene transport={transport} song={song} preset={preset} presetNonce={presetNonce} showUpcoming={showUpcoming} showFingers={showFingers} keyGuess={keyGuess} />
+        {routine.running && routine.steps[routine.index] && (
+          <div className="routine-banner">
+            <span className="dim small">
+              Step {routine.index + 1}/{routine.steps.length}
+            </span>
+            <span>{routine.steps[routine.index].song.title}</span>
+            <span className="big">{formatSec(routine.remainingSec)}</span>
+            <button className="btn small" onClick={routine.next} disabled={routine.index + 1 >= routine.steps.length}>
+              Next ▸
+            </button>
+            <button className="btn small ghost" onClick={routine.stop}>
+              Stop
+            </button>
+          </div>
+        )}
         {isMobile && (
           <div className="mobile-bar">
             <button className={`btn small ${drawer === 'songs' ? 'on' : ''}`} onClick={() => toggleDrawer('songs')}>
@@ -101,6 +124,9 @@ export default function App() {
             onLoadExercise={loadExercise}
             tab={tab}
             onTab={setTab}
+            routine={routine}
+            showKey={showKey}
+            onShowKey={setShowKey}
             preset={preset}
             onPreset={choosePreset}
             showUpcoming={showUpcoming}
@@ -115,7 +141,7 @@ export default function App() {
       </div>
 
       <footer className="bottom">
-        {showTab && <TabStrip transport={transport} />}
+        {showTab && <TabStrip transport={transport} chords={chords} />}
         <TransportBar transport={transport} compact={isMobile} />
       </footer>
     </div>

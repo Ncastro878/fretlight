@@ -1,6 +1,6 @@
 import type * as alphaTab from '@coderline/alphatab'
 import { assignFingers } from '../model/fingers'
-import { sortNotes, type Song, type SongNote } from '../model/song'
+import { sortNotes, type Section, type Song, type SongNote } from '../model/song'
 
 const TICKS_PER_BEAT = 960
 
@@ -90,6 +90,13 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
       beatsPerBar = bpb
     }
   }
+  const sections: Section[] = []
+  for (const mb of score.masterBars) {
+    if (mb.section && (mb.section.text || mb.section.marker)) {
+      sections.push({ beat: mb.start / TICKS_PER_BEAT, name: mb.section.text || mb.section.marker })
+    }
+  }
+
   const title = score.title || fileName.replace(/\.[^.]+$/, '')
   const composer = score.artist || score.music || score.words || ''
 
@@ -101,6 +108,7 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
     beatsPerBar,
     tuning,
     notes: sortNotes(notes),
+    sections: sections.length ? sections : undefined,
     blurb: `Imported from ${fileName}`,
   })
 }

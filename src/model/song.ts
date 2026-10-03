@@ -58,6 +58,12 @@ export function bendLabel(semitones: number): string {
   return '¼'
 }
 
+export interface Section {
+  /** Beat where the section starts. */
+  beat: number
+  name: string
+}
+
 export interface Song {
   id: string
   title: string
@@ -70,6 +76,8 @@ export interface Song {
   notes: SongNote[]
   /** Short note shown in the library, e.g. "Melody, open position". */
   blurb?: string
+  /** Named parts (intro, verse, solo) for quick looping. */
+  sections?: Section[]
 }
 
 export const STANDARD_TUNING = [40, 45, 50, 55, 59, 64]

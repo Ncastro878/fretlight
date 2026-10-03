@@ -138,8 +138,32 @@ export function TransportBar({ transport, compact = false }: Props) {
     </div>
   )
 
+  const sections = song.sections ?? []
+  const loopSection = (i: number) => {
+    const a = sections[i].beat
+    const b = sections[i + 1]?.beat ?? length
+    transport.setLoop({ a, b })
+    transport.seek(a)
+  }
+  const activeSection = sections.reduce((acc, s, i) => (s.beat <= pos ? i : acc), -1)
+
   return (
     <div className={`transport ${compact ? 'compact' : ''}`}>
+      {sections.length > 0 && (
+        <div className="sections">
+          <span className="dim small">Sections:</span>
+          {sections.map((s, i) => (
+            <button
+              key={`${s.beat}-${i}`}
+              className={`chip ${i === activeSection ? 'on' : ''} ${loop && loop.a === s.beat ? 'looped' : ''}`}
+              onClick={() => loopSection(i)}
+              title={`Loop ${s.name} (bar ${formatBeat(song, s.beat)})`}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
       {compact ? (
         <>
           <div className="transport-row">
