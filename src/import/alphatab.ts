@@ -8,6 +8,15 @@ export interface ImportedTrack {
   index: number
   name: string
   strings: number
+  notes: number
+}
+
+export interface LoadedScore {
+  score: alphaTab.model.Score
+  tracks: ImportedTrack[]
+  fileName: string
+  title?: string
+  trackIndex: number
 }
 
 /** Parse a Guitar Pro (.gp3/.gp4/.gp5/.gpx/.gp), MusicXML, or alphaTex file. */
@@ -21,9 +30,40 @@ export function listStringedTracks(score: alphaTab.model.Score): ImportedTrack[]
   const out: ImportedTrack[] = []
   score.tracks.forEach((track, index) => {
     const staff = track.staves.find((s) => s.isStringed && s.tuning.length >= 4)
-    if (staff) out.push({ index, name: track.name || `Track ${index + 1}`, strings: staff.tuning.length })
+    if (staff) out.push({ index, name: track.name || `Track ${index + 1}`, strings: staff.tuning.length, notes: countNotes(score, index) })
   })
   return out
+}
+
+export function countNotes(score: alphaTab.model.Score, trackIndex: number): number {
+  let n = 0
+  for (const staff of score.tracks[trackIndex].staves) {
+    for (const bar of staff.bars) for (const v of bar.voices) for (const b of v.beats) n += b.notes.length
+  }
+  return n
+}
+
+/**
+ * Guess the track a guitarist wants: skip vocal and bass lines when possible,
+ * then take the one with the most notes.
+ */
+export function pickDefaultTrack(tracks: ImportedTrack[]): number {
+  const isVocal = (t: ImportedTrack) => /vocal|voice|voz|sing|lyric/i.test(t.name)
+  const isBass = (t: ImportedTrack) => t.strings <= 5 || /bass/i.test(t.name)
+  const guitars = tracks.filter((t) => !isVocal(t) && !isBass(t))
+  const nonVocal = tracks.filter((t) => !isVocal(t))
+  const pool = guitars.length ? guitars : nonVocal.length ? nonVocal : tracks
+  return pool.reduce((best, t) => (t.notes > best.notes ? t : best), pool[0]).index
+}
+
+/** Short role label for a track chip. */
+export function trackRole(t: ImportedTrack): string {
+  if (t.strings <= 5 || /bass/i.test(t.name)) return 'bass'
+  if (/vocal|voice|voz|sing|lyric/i.test(t.name)) return 'vocal'
+  if (/solo|lead/i.test(t.name)) return 'lead'
+  if (/rhythm|rythm|ritmo/i.test(t.name)) return 'rhythm'
+  if (/acoustic|ac\./i.test(t.name)) return 'acoustic'
+  return 'guitar'
 }
 
 export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fileName: string, titleOverride?: string): Song {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Transport } from '../player/transport'
 import { useTransportState } from '../player/transport'
 import { formatBeat, formatClock } from './format'
+import { trackRole, type LoadedScore } from '../import/alphatab'
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
@@ -9,9 +10,12 @@ interface Props {
   transport: Transport
   /** Phone layout: two rows, no keyboard hint. */
   compact?: boolean
+  /** Imported file with several parts, when the current song came from one. */
+  parts?: LoadedScore | null
+  onPart?: (trackIndex: number) => void
 }
 
-export function TransportBar({ transport, compact = false }: Props) {
+export function TransportBar({ transport, compact = false, parts = null, onPart }: Props) {
   const state = useTransportState(transport)
   const { song, playing, speed, loop, loopEnabled, length, bpm, metronome } = state
   const [pos, setPos] = useState(0)
@@ -149,6 +153,26 @@ export function TransportBar({ transport, compact = false }: Props) {
 
   return (
     <div className={`transport ${compact ? 'compact' : ''}`}>
+      {parts && parts.tracks.length > 1 && (
+        <div className="sections parts">
+          <span className="dim small">Part:</span>
+          {parts.tracks.map((t) => {
+            const role = trackRole(t)
+            return (
+              <button
+                key={t.index}
+                className={`chip part ${t.index === parts.trackIndex ? 'on' : ''} role-${role}`}
+                onClick={() => onPart?.(t.index)}
+                title={`${t.name} · ${t.strings} strings · ${t.notes} notes`}
+              >
+                {t.name}
+                <span className="role">{role}</span>
+              </button>
+            )
+          })}
+          <span className="dim small hint-inline">← switch guitar / bass part</span>
+        </div>
+      )}
       {sections.length > 0 && (
         <div className="sections">
           <span className="dim small">Sections:</span>

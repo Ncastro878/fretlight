@@ -9,6 +9,7 @@ import { RightPanel } from './ui/RightPanel'
 import { TabStrip } from './ui/TabStrip'
 import { TransportBar } from './ui/TransportBar'
 import { useRoutine } from './practice/routine'
+import { scoreToSong, type LoadedScore } from './import/alphatab'
 import { detectChords, detectKey } from './analysis/key'
 import { formatSec } from './ui/PracticePanel'
 
@@ -36,6 +37,24 @@ export default function App() {
   const [showTab, setShowTab] = useState(true)
   const [showKey, setShowKey] = useState(false)
   const routine = useRoutine(transport)
+  const [loadedScore, setLoadedScore] = useState<LoadedScore | null>(null)
+  const switchPart = (trackIndex: number) => {
+    if (!loadedScore) return
+    const wasPlaying = transport.getSnapshot().playing
+    const pos = Math.max(0, transport.position())
+    const { loop, loopEnabled } = transport.getSnapshot()
+    const next = scoreToSong(loadedScore.score, trackIndex, loadedScore.fileName, loadedScore.title)
+    transport.setSong(next)
+    if (loop) {
+      transport.setLoop(loop)
+      transport.setLoopEnabled(loopEnabled)
+    }
+    transport.seek(pos)
+    if (wasPlaying) void transport.play()
+    setLoadedScore({ ...loadedScore, trackIndex })
+  }
+  // Parts only apply while the imported song is the one playing.
+  const partsFor = loadedScore && song.blurb === `Imported from ${loadedScore.fileName}` ? loadedScore : null
   const keyGuess = useMemo(() => (showKey ? detectKey(song) : null), [showKey, song])
   const chords = useMemo(() => (showKey ? detectChords(song) : null), [showKey, song])
 
@@ -124,6 +143,7 @@ export default function App() {
             onLoadExercise={loadExercise}
             tab={tab}
             onTab={setTab}
+            onScoreLoaded={setLoadedScore}
             routine={routine}
             showKey={showKey}
             onShowKey={setShowKey}
@@ -142,7 +162,7 @@ export default function App() {
 
       <footer className="bottom">
         {showTab && <TabStrip transport={transport} chords={chords} />}
-        <TransportBar transport={transport} compact={isMobile} />
+        <TransportBar transport={transport} compact={isMobile} parts={partsFor} onPart={switchPart} />
       </footer>
     </div>
   )

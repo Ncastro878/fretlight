@@ -126,3 +126,13 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .app.mobile .routine-banner { top: 48px; left: 8px; right: 8px; transform: none; white-space: normal; flex-wrap: wrap; }
 .routine-banner .big { font-size: 20px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; }
 .key-badge { color: var(--accent); }
+
+.parts .chip.part { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; font-size: 12px; color: var(--text); border-color: rgba(255,255,255,0.18); }
+.parts .chip.part.on { background: rgba(250, 204, 21, 0.16); border-color: var(--accent); color: var(--accent); }
+.parts .role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim); background: rgba(255,255,255,0.06); border-radius: 4px; padding: 1px 5px; }
+.parts .chip.part.on .role { color: var(--accent); }
+.parts .chip.role-bass .role { color: #9ad8ff; }
+.parts .chip.role-lead .role { color: #fb923c; }
+.parts .chip.role-vocal { opacity: 0.6; }
+.hint-inline { margin-left: 4px; }
+.app.mobile .hint-inline { display: none; }
