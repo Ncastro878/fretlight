@@ -5,6 +5,7 @@ import { RIFFS, RiffPlayer, openMic } from './audio/source'
 import { LESSONS, PRESETS } from './lessons/lessons'
 import { Board } from './scene/Board'
 import { Scope, TransferPlot } from './ui/Scope'
+import { ChainStrip } from './ui/ChainStrip'
 
 const params = new URLSearchParams(window.location.search)
 
@@ -98,15 +99,21 @@ export default function App() {
     setChain((c) => c.filter((p) => p.uid !== uid))
     if (selected === uid) setSelected(null)
   }
-  const move = (uid: string, dir: -1 | 1) =>
+  const moveTo = (uid: string, toIndex: number) =>
     setChain((c) => {
       const i = c.findIndex((p) => p.uid === uid)
-      const j = i + dir
-      if (i < 0 || j < 0 || j >= c.length) return c
+      if (i < 0) return c
       const next = [...c]
-      ;[next[i], next[j]] = [next[j], next[i]]
+      const [item] = next.splice(i, 1)
+      const target = Math.max(0, Math.min(next.length, toIndex > i ? toIndex - 1 : toIndex))
+      next.splice(target, 0, item)
       return next
     })
+  const move = (uid: string, dir: -1 | 1) => {
+    const i = chain.findIndex((p) => p.uid === uid)
+    if (i < 0) return
+    moveTo(uid, dir < 0 ? i - 1 : i + 2)
+  }
   const add = (type: string) => {
     const p = makePedal(type)
     setChain((c) => {
@@ -293,16 +300,16 @@ export default function App() {
 
         <div className="tl-stage">
           <Board chain={bypassAll ? chain.map((p) => ({ ...p, enabled: false })) : chain} selected={selected} onSelect={setSelected} onToggle={toggle} levelRef={levelRef} />
-          <div className="chain-strip">
-            {chain.map((p, i) => (
-              <button key={p.uid} className={`chip ${p.uid === selected ? 'on' : ''} ${p.enabled ? '' : 'off'}`} style={{ borderColor: p.uid === selected ? pedalDef(p.type).color : undefined }} onClick={() => setSelected(p.uid)} title="Select">
-                {i + 1}. {pedalDef(p.type).name}
-              </button>
-            ))}
-            <button className={`chip ${bypassAll ? 'on' : ''}`} onClick={() => setBypassAll((v) => !v)} title="Hear the dry guitar for comparison">
-              {bypassAll ? 'Bypassed: dry guitar' : 'A/B: bypass all'}
-            </button>
-          </div>
+          <ChainStrip
+            chain={chain}
+            selected={selected}
+            bypassAll={bypassAll}
+            onSelect={setSelected}
+            onToggle={toggle}
+            onRemove={remove}
+            onMove={moveTo}
+            onBypassAll={() => setBypassAll((v) => !v)}
+          />
         </div>
 
         <aside className={`tl-panel right ${mobilePanel === 'right' ? 'open' : ''}`}>

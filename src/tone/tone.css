@@ -49,7 +49,28 @@ p { margin: 4px 0; line-height: 1.45; }
 .tl-panel section { display: flex; flex-direction: column; gap: 6px; }
 .tl-stage { position: relative; min-width: 0; min-height: 0; }
 .tl-stage canvas { display: block; }
-.chain-strip { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.chain-editor { position: absolute; left: 10px; right: 10px; bottom: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 6px; }
+.chain-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.chain-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.endcap { padding: 0 6px; }
+.pedal-slot { display: flex; align-items: center; position: relative; }
+.pedal-slot.end { min-width: 70px; }
+.drop-marker { width: 3px; height: 30px; background: var(--accent); border-radius: 2px; margin: 0 3px; box-shadow: 0 0 8px var(--accent); }
+.pedal-card { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px 4px 4px; cursor: grab; user-select: none; }
+.pedal-card:active { cursor: grabbing; }
+.pedal-card.on { background: rgba(250, 204, 21, 0.08); }
+.pedal-card.off .pname, .pedal-card.off .swatch { opacity: 0.4; }
+.pedal-card.off .pname { text-decoration: line-through; }
+.pedal-card.dragging { opacity: 0.4; }
+.pedal-card .grip { color: var(--dim); font-size: 11px; letter-spacing: -2px; }
+.pedal-card .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--pc); }
+.pedal-card .pname { font-size: 12px; white-space: nowrap; }
+.pedal-actions { display: inline-flex; gap: 2px; margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); }
+.mini { background: transparent; border: 1px solid transparent; border-radius: 5px; width: 22px; height: 22px; font-size: 11px; cursor: pointer; color: var(--dim); display: inline-flex; align-items: center; justify-content: center; }
+.mini:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: var(--text); }
+.mini:disabled { opacity: 0.3; cursor: default; }
+.mini.power.on { color: #ef4444; }
+.mini.danger:hover { color: #f87171; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .item { width: 100%; text-align: left; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
 .item:hover { background: rgba(255,255,255,0.07); }
@@ -74,6 +95,9 @@ p { margin: 4px 0; line-height: 1.45; }
 .scope { width: 100%; height: 100%; display: block; border-right: 1px solid var(--border); }
 
 @media (max-width: 1000px) {
+  .chain-editor { left: 6px; right: 6px; bottom: 6px; padding: 6px; }
+  .chain-head .small { display: none; }
+  .pedal-card .grip { display: none; }
   .tl-main { grid-template-columns: 1fr; }
   .tl-panel { display: none; position: absolute; top: 56px; bottom: 0; left: 0; right: 0; z-index: 3; border: 0; }
   .tl-panel.open { display: flex; }
