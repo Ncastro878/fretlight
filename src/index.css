@@ -11,6 +11,7 @@
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+@supports (height: 100dvh) { html, body, #root { height: 100dvh; } }
 button { font: inherit; color: inherit; }
 h1 { font-size: 18px; margin: 0; letter-spacing: 0.2px; }
 h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 0 0 8px; }
@@ -70,3 +71,30 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .rail-loop { position: absolute; top: 0; bottom: 0; background: rgba(250, 204, 21, 0.12); border-left: 1px solid rgba(250,204,21,0.5); border-right: 1px solid rgba(250,204,21,0.5); pointer-events: none; }
 .rail-loop.on { background: rgba(250, 204, 21, 0.28); }
 .hint { font-size: 11px; }
+
+/* Phones and narrow windows */
+.mobile-bar { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 6px; align-items: center; z-index: 2; }
+.mobile-bar .btn { background: var(--panel); backdrop-filter: blur(8px); }
+.app.mobile .topbar { padding: 8px 12px; }
+.app.mobile .topbar h1 { font-size: 16px; }
+.app.mobile .tagline { display: none; }
+.app.mobile .panel { top: 48px; bottom: 8px; left: 8px; right: 8px; width: auto; z-index: 3; }
+.app.mobile .tabstrip { height: 92px; }
+.app.mobile .transport { padding: 8px 10px; gap: 6px; }
+.app.mobile .transport-row { gap: 6px; }
+.app.mobile .btn { padding: 7px 10px; }
+.app.mobile .btn.primary { min-width: 84px; }
+.app.mobile .seg-btn { padding: 5px 7px; font-size: 12px; }
+.app.mobile .clock { font-size: 12px; margin-left: auto; }
+.app.mobile .loop-controls { margin-left: 0; }
+.app.mobile .rail { height: 22px; }
+@media (max-width: 420px) {
+  .app.mobile .seg-btn { padding: 5px 5px; font-size: 11px; }
+  .app.mobile .loop-controls .btn { padding: 7px 8px; font-size: 12px; }
+}
+@media (max-height: 520px) {
+  .app.mobile .topbar { display: none; }
+  .app.mobile .tabstrip { height: 64px; }
+  .app.mobile .transport { padding: 6px 10px; gap: 4px; }
+  .app.mobile .rail { height: 14px; }
+}

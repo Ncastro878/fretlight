@@ -1,6 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
+import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { SCALE_LENGTH, fretX } from './geometry'
 
@@ -42,13 +43,28 @@ interface Props {
 export function CameraRig({ preset, nonce }: Props) {
   const controls = useRef<OrbitControlsImpl>(null)
   const camera = useThree((s) => s.camera)
+  const aspect = useThree((s) => s.size.width / Math.max(1, s.size.height))
+  const portrait = aspect < 1
 
   useEffect(() => {
     const p = CAMERA_PRESETS[preset]
-    camera.position.set(...p.position)
-    controls.current?.target.set(...p.target)
+    const target = new THREE.Vector3(...p.target)
+    const position = new THREE.Vector3(...p.position)
+    if (portrait && preset !== 'front') {
+      // A tall screen cannot fit a horizontal neck, so stand it up like a
+      // fretboard chart: headstock at the top, seen from above with a slight tilt.
+      const x = preset === 'neck' ? 1.5 : 2.3
+      const height = preset === 'neck' ? 3.9 : 5.6
+      target.set(x, 0, 0)
+      position.set(x + 0.2, height / Math.min(1, aspect * 1.7), 1.2)
+      camera.up.set(-1, 0, 0)
+    } else {
+      camera.up.set(0, 1, 0)
+    }
+    camera.position.copy(position)
+    controls.current?.target.copy(target)
     controls.current?.update()
-  }, [preset, nonce, camera])
+  }, [preset, nonce, camera, portrait, aspect])
 
   return (
     <OrbitControls

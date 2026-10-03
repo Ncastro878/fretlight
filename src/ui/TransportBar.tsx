@@ -7,9 +7,11 @@ const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
 interface Props {
   transport: Transport
+  /** Phone layout: two rows, no keyboard hint. */
+  compact?: boolean
 }
 
-export function TransportBar({ transport }: Props) {
+export function TransportBar({ transport, compact = false }: Props) {
   const state = useTransportState(transport)
   const { song, playing, speed, loop, loopEnabled, length } = state
   const [pos, setPos] = useState(0)
@@ -80,49 +82,78 @@ export function TransportBar({ transport }: Props) {
 
   const pct = (b: number) => `${(b / Math.max(length, 1e-6)) * 100}%`
 
+  const playButtons = (
+    <>
+      <button className="btn primary" onClick={() => transport.toggle()} title="Space">
+        {playing ? '❚❚ Pause' : '▶ Play'}
+      </button>
+      <button className="btn" onClick={() => transport.stop()} title="Back to start">
+        ■
+      </button>
+    </>
+  )
+  const speedButtons = (
+    <div className="seg">
+      {SPEEDS.map((s) => (
+        <button key={s} className={`seg-btn ${speed === s ? 'on' : ''}`} onClick={() => transport.setSpeed(s)}>
+          {s}×
+        </button>
+      ))}
+    </div>
+  )
+  const clock = (
+    <div className="clock mono">
+      <span>{formatClock(song, pos, speed)}</span>
+      <span className="dim"> / {formatClock(song, length, speed)}</span>
+      <span className="dim"> · bar </span>
+      <span>{formatBeat(song, pos)}</span>
+    </div>
+  )
+  const loopButtons = (
+    <div className="loop-controls">
+      <button className="btn" onClick={setA} title="Set loop start at this bar (A)">
+        Set A
+      </button>
+      <button className="btn" onClick={setB} title="Set loop end at this bar (B)">
+        Set B
+      </button>
+      <button
+        className={`btn ${loopEnabled ? 'on' : ''}`}
+        disabled={!loop}
+        onClick={() => transport.setLoopEnabled(!loopEnabled)}
+        title="Toggle loop (L)"
+      >
+        ⟲ Loop {loop && !compact ? `${formatBeat(song, loop.a)}–${formatBeat(song, loop.b)}` : ''}
+      </button>
+      <button className="btn ghost" disabled={!loop} onClick={() => transport.setLoop(null)}>
+        Clear
+      </button>
+    </div>
+  )
+
   return (
-    <div className="transport">
-      <div className="transport-row">
-        <button className="btn primary" onClick={() => transport.toggle()} title="Space">
-          {playing ? '❚❚ Pause' : '▶ Play'}
-        </button>
-        <button className="btn" onClick={() => transport.stop()} title="Back to start">
-          ■
-        </button>
-        <div className="seg">
-          {SPEEDS.map((s) => (
-            <button key={s} className={`seg-btn ${speed === s ? 'on' : ''}`} onClick={() => transport.setSpeed(s)}>
-              {s}×
-            </button>
-          ))}
+    <div className={`transport ${compact ? 'compact' : ''}`}>
+      {compact ? (
+        <>
+          <div className="transport-row">
+            {playButtons}
+            {clock}
+          </div>
+          <div className="transport-row">
+            {speedButtons}
+            <div className="spacer" />
+            {loopButtons}
+          </div>
+        </>
+      ) : (
+        <div className="transport-row">
+          {playButtons}
+          {speedButtons}
+          {clock}
+          <div className="spacer" />
+          {loopButtons}
         </div>
-        <div className="clock mono">
-          <span>{formatClock(song, pos, speed)}</span>
-          <span className="dim"> / {formatClock(song, length, speed)}</span>
-          <span className="dim"> · bar </span>
-          <span>{formatBeat(song, pos)}</span>
-        </div>
-        <div className="spacer" />
-        <div className="loop-controls">
-          <button className="btn" onClick={setA} title="Set loop start at this bar (A)">
-            Set A
-          </button>
-          <button className="btn" onClick={setB} title="Set loop end at this bar (B)">
-            Set B
-          </button>
-          <button
-            className={`btn ${loopEnabled ? 'on' : ''}`}
-            disabled={!loop}
-            onClick={() => transport.setLoopEnabled(!loopEnabled)}
-            title="Toggle loop (L)"
-          >
-            ⟲ Loop {loop ? `${formatBeat(song, loop.a)}–${formatBeat(song, loop.b)}` : ''}
-          </button>
-          <button className="btn ghost" disabled={!loop} onClick={() => transport.setLoop(null)}>
-            Clear
-          </button>
-        </div>
-      </div>
+      )}
       <div className="rail" ref={rail} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
         {loop && <div className={`rail-loop ${loopEnabled ? 'on' : ''}`} style={{ left: pct(loop.a), width: pct(loop.b - loop.a) }} />}
         {Array.from({ length: Math.floor(length / song.beatsPerBar) }, (_, i) => (
@@ -131,7 +162,9 @@ export function TransportBar({ transport }: Props) {
         <div className="rail-fill" style={{ width: pct(pos) }} />
         <div className="rail-head" style={{ left: pct(pos) }} />
       </div>
-      <div className="hint dim">Space play/pause · ← → one bar · A / B set loop points · L toggle loop · drag the bar to scrub</div>
+      {!compact && (
+        <div className="hint dim">Space play/pause · ← → one bar · A / B set loop points · L toggle loop · drag the bar to scrub</div>
+      )}
     </div>
   )
 }
