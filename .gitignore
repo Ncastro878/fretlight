@@ -5,3 +5,4 @@ dist
 *.local
 # raw test downloads (some fixtures are not redistributable)
 /samples/
+.env*
