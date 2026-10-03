@@ -26,7 +26,7 @@ export function listStringedTracks(score: alphaTab.model.Score): ImportedTrack[]
   return out
 }
 
-export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fileName: string): Song {
+export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fileName: string, titleOverride?: string): Song {
   const track = score.tracks[trackIndex]
   const staff = track.staves.find((s) => s.isStringed && s.tuning.length >= 4)
   if (!staff) throw new Error('That track has no string tablature.')
@@ -97,7 +97,7 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
     }
   }
 
-  const title = score.title || fileName.replace(/\.[^.]+$/, '')
+  const title = titleOverride || score.title || fileName.replace(/\.[^.]+$/, '')
   const composer = score.artist || score.music || score.words || ''
 
   return assignFingers({

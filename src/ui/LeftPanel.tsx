@@ -41,6 +41,34 @@ const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }
       { label: 'Polyphia · Ignite', file: 'rock/polyphia--ignite.gp5' },
     ],
   },
+  {
+    title: 'The Strokes',
+    items: [
+      { label: 'The Strokes · Last Nite', file: 'strokes/last-nite.gp4' },
+      { label: 'The Strokes · Reptilia', file: 'strokes/reptilia.gp5' },
+      { label: 'The Strokes · Someday', file: 'strokes/someday.gp5' },
+      { label: 'The Strokes · Hard to Explain', file: 'strokes/hard-to-explain.gp5' },
+      { label: 'The Strokes · Is This It', file: 'strokes/is-this-it.gp3' },
+      { label: 'The Strokes · The Modern Age', file: 'strokes/the-modern-age.gpx' },
+      { label: 'The Strokes · Juicebox', file: 'strokes/juicebox.gp5' },
+      { label: 'The Strokes · You Only Live Once', file: 'strokes/you-only-live-once.gp5' },
+      { label: 'The Strokes · 12:51', file: 'strokes/12-51.gp3' },
+      { label: 'The Strokes · Under Cover of Darkness', file: 'strokes/under-cover-of-darkness.gp5' },
+      { label: 'The Strokes · Take It or Leave It', file: 'strokes/take-it-or-leave-it.gp4' },
+      { label: 'The Strokes · Soma', file: 'strokes/soma.gpx' },
+      { label: 'The Strokes · Barely Legal', file: 'strokes/barely-legal.gpx' },
+      { label: 'The Strokes · New York City Cops', file: 'strokes/new-york-city-cops.gp4' },
+      { label: 'The Strokes · Heart in a Cage', file: 'strokes/heart-in-a-cage.gp5' },
+      { label: 'The Strokes · Automatic Stop', file: 'strokes/automatic-stop.gp4' },
+      { label: 'The Strokes · Trying Your Luck', file: 'strokes/trying-your-luck.gp4' },
+      { label: 'The Strokes · Alone Together', file: 'strokes/alone-together.gp4' },
+      { label: 'The Strokes · Under Control', file: 'strokes/under-control.gp4' },
+      { label: 'The Strokes · What Ever Happened?', file: 'strokes/what-ever-happened.gp5' },
+      { label: 'The Strokes · The End Has No End', file: 'strokes/the-end-has-no-end.gp5' },
+      { label: 'The Strokes · Meet Me in the Bathroom', file: 'strokes/meet-me-in-the-bathroom.gpx' },
+      { label: 'The Strokes · Ize of the World', file: 'strokes/ize-of-the-world.gp5' },
+    ],
+  },
 ]
 
 /**
@@ -97,7 +125,7 @@ export function LeftPanel(p: Props) {
   const [error, setError] = useState<string | null>(null)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [loaded, setLoaded] = useState<{ score: Awaited<ReturnType<typeof parseScore>>; tracks: ImportedTrack[]; name: string; trackIndex: number } | null>(null)
+  const [loaded, setLoaded] = useState<{ score: Awaited<ReturnType<typeof parseScore>>; tracks: ImportedTrack[]; name: string; trackIndex: number; title?: string } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
@@ -108,15 +136,15 @@ export function LeftPanel(p: Props) {
     setError(null)
   }
 
-  const loadBuffer = async (data: ArrayBuffer, name: string) => {
+  const loadBuffer = async (data: ArrayBuffer, name: string, title?: string) => {
     setBusy(name)
     try {
       const score = await parseScore(data)
       const tracks = listStringedTracks(score)
       if (tracks.length === 0) throw new Error('No guitar or bass tracks in that file.')
       const trackIndex = pickDefaultTrack(score, tracks)
-      addImported(scoreToSong(score, trackIndex, name))
-      setLoaded({ score, tracks, name, trackIndex })
+      addImported(scoreToSong(score, trackIndex, name, title))
+      setLoaded({ score, tracks, name, trackIndex, title })
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -127,7 +155,7 @@ export function LeftPanel(p: Props) {
   const switchTrack = (trackIndex: number) => {
     if (!loaded) return
     try {
-      addImported(scoreToSong(loaded.score, trackIndex, loaded.name))
+      addImported(scoreToSong(loaded.score, trackIndex, loaded.name, loaded.title))
       setLoaded({ ...loaded, trackIndex })
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -136,11 +164,11 @@ export function LeftPanel(p: Props) {
 
   const onFile = async (f: File) => loadBuffer(await f.arrayBuffer(), f.name)
 
-  const onSample = async (file: string) => {
+  const onSample = async (file: string, label?: string) => {
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}samples/${file}`)
       if (!res.ok) throw new Error(`Could not fetch ${file}`)
-      await loadBuffer(await res.arrayBuffer(), file.split('/').pop() ?? file)
+      await loadBuffer(await res.arrayBuffer(), file.split('/').pop() ?? file, label)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
@@ -245,7 +273,7 @@ export function LeftPanel(p: Props) {
             <div className="dim small">{g.title} tabs:</div>
             <div className="row">
               {g.items.map((s) => (
-                <button key={s.file} className="btn small" onClick={() => void onSample(s.file)} title={s.file}>
+                <button key={s.file} className="btn small" onClick={() => void onSample(s.file, s.label)} title={s.file}>
                   {s.label}
                 </button>
               ))}
