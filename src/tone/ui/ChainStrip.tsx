@@ -11,6 +11,8 @@ interface Props {
   /** Insert the pedal before the item currently at `insertIndex` (chain.length = at the end). */
   onMove: (uid: string, insertIndex: number) => void
   onBypassAll: () => void
+  /** Ear training: hide what the mystery pedals are. */
+  hideTypes?: boolean
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * Every pedal carries its own power and remove buttons so nothing is hidden
  * behind a selection step.
  */
-export function ChainStrip({ chain, selected, bypassAll, onSelect, onToggle, onRemove, onMove, onBypassAll }: Props) {
+export function ChainStrip({ chain, selected, bypassAll, onSelect, onToggle, onRemove, onMove, onBypassAll, hideTypes = false }: Props) {
   const [dragging, setDragging] = useState<string | null>(null)
   const [over, setOver] = useState<number | null>(null)
 
@@ -37,21 +39,23 @@ export function ChainStrip({ chain, selected, bypassAll, onSelect, onToggle, onR
         </button>
       </div>
       <div className="chain-row">
-        <span className="endcap dim small">guitar</span>
         {chain.map((p, i) => {
           const def = pedalDef(p.type)
           const isSel = p.uid === selected
+          const fixed = !!def.fixed
+          const hidden = hideTypes && !fixed && def.category !== 'amp' && def.category !== 'cab'
           return (
             <div key={p.uid} className="pedal-slot" onDragOver={(e) => {
               e.preventDefault()
-              setOver(i)
-            }} onDrop={() => drop(i)}>
-              {over === i && dragging && dragging !== p.uid && <div className="drop-marker" />}
+              setOver(Math.max(1, i))
+            }} onDrop={() => drop(Math.max(1, i))}>
+              {over === i && dragging && dragging !== p.uid && i > 0 && <div className="drop-marker" />}
               <div
                 className={`pedal-card ${isSel ? 'on' : ''} ${p.enabled ? '' : 'off'} ${dragging === p.uid ? 'dragging' : ''}`}
-                style={{ borderColor: isSel ? def.color : undefined, ['--pc' as string]: def.color }}
-                draggable
+                style={{ borderColor: isSel ? def.color : undefined, ['--pc' as string]: hidden ? '#374151' : def.color }}
+                draggable={!fixed}
                 onDragStart={(e) => {
+                  if (fixed) return e.preventDefault()
                   setDragging(p.uid)
                   e.dataTransfer.effectAllowed = 'move'
                   e.dataTransfer.setData('text/plain', p.uid)
@@ -68,10 +72,11 @@ export function ChainStrip({ chain, selected, bypassAll, onSelect, onToggle, onR
                 </span>
                 <span className="swatch" />
                 <span className="pname">
-                  {i + 1}. {def.name}
+                  {i + 1}. {hidden ? '?' : def.name}
                 </span>
+                {!fixed && (
                 <span className="pedal-actions" onClick={(e) => e.stopPropagation()}>
-                  <button className="mini" disabled={i === 0} onClick={() => onMove(p.uid, i - 1)} title="Move earlier (toward the guitar)">
+                  <button className="mini" disabled={i <= 1} onClick={() => onMove(p.uid, i - 1)} title="Move earlier (toward the guitar)">
                     ◀
                   </button>
                   <button className="mini" disabled={i === chain.length - 1} onClick={() => onMove(p.uid, i + 2)} title="Move later (toward the speakers)">
@@ -84,6 +89,7 @@ export function ChainStrip({ chain, selected, bypassAll, onSelect, onToggle, onR
                     ✕
                   </button>
                 </span>
+                )}
               </div>
             </div>
           )

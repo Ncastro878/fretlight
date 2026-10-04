@@ -108,3 +108,21 @@ p { margin: 4px 0; line-height: 1.45; }
   .source { gap: 6px; }
   .vol input { width: 70px; }
 }
+
+.quiz .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.quiz .choices .btn { padding: 8px 6px; white-space: normal; }
+.quiz .feedback { min-height: 18px; font-size: 12.5px; }
+.quiz .feedback.ok { color: #4ade80; }
+.quiz .feedback.bad { color: #f87171; }
+.micmeter { display: flex; align-items: center; gap: 8px; }
+.meter { width: 90px; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.meter .fill { height: 100%; transition: width 60ms linear; }
+.tuner { font-size: 12px; min-width: 76px; color: var(--dim); }
+.tuner.ok { color: #4ade80; }
+.delay-tempo { display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px dashed var(--border); border-radius: 8px; }
+@media (max-width: 1000px) {
+  .tl-panel.right { top: auto; height: 70%; border-top-left-radius: 14px; border-top-right-radius: 14px; border-top: 1px solid var(--border); box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+  .tl-panel.left { height: auto; }
+  .chain-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .pedal-card .pname { font-size: 11px; }
+}

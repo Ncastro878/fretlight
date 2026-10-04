@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Engine } from './audio/engine'
-import { CATEGORY_NAMES, CATEGORY_ORDER, DEFAULT_CHAIN, PEDALS, makePedal, pedalDef, type ParamDef, type PedalInstance } from './audio/pedals'
+import { CATEGORY_NAMES, CATEGORY_ORDER, DEFAULT_CHAIN, PEDALS, decodeChain, encodeChain, loadSavedTones, makePedal, normalizeChain, pedalDef, storeSavedTones, type ParamDef, type PedalInstance, type SavedTone } from './audio/pedals'
 import { RIFFS, RiffPlayer, openMic } from './audio/source'
 import { LESSONS, PRESETS } from './lessons/lessons'
 import { Board } from './scene/Board'
 import { Scope, TransferPlot } from './ui/Scope'
 import { ChainStrip } from './ui/ChainStrip'
+import { Quiz } from './ui/Quiz'
+import { MicMeter } from './ui/MicMeter'
 
 const params = new URLSearchParams(window.location.search)
 
@@ -24,10 +26,21 @@ function fmt(def: ParamDef, v: number): string {
 }
 
 export default function App() {
-  const [chain, setChain] = useState<PedalInstance[]>(() => {
+  const [chain, setChainRaw] = useState<PedalInstance[]>(() => {
+    const shared = params.get('chain') ? decodeChain(params.get('chain') as string) : null
+    if (shared) return shared
     const preset = PRESETS.find((p) => p.id === params.get('preset'))
-    return preset ? preset.build() : DEFAULT_CHAIN()
+    return normalizeChain(preset ? preset.build() : DEFAULT_CHAIN())
   })
+  // The guitar stage is always present and first.
+  const setChain = useCallback((update: PedalInstance[] | ((c: PedalInstance[]) => PedalInstance[])) => {
+    setChainRaw((c) => normalizeChain(typeof update === 'function' ? update(c) : update))
+  }, [])
+  const [saved, setSaved] = useState<SavedTone[]>(() => loadSavedTones())
+  const [quizOpen, setQuizOpen] = useState(false)
+  const quizBackup = useRef<PedalInstance[] | null>(null)
+  const [holdBypass, setHoldBypass] = useState<string | null>(null)
+  const [micAnalyser, setMicAnalyser] = useState<AnalyserNode | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [riffId, setRiffId] = useState(params.get('riff') ?? 'clean-arp')
   const [playing, setPlaying] = useState(false)
@@ -37,7 +50,7 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(params.get('lesson'))
   const [stepIdx, setStepIdx] = useState(0)
   const [bypassAll, setBypassAll] = useState(false)
-  const [leftTab, setLeftTab] = useState<'lessons' | 'recipes'>('lessons')
+  const [leftTab, setLeftTab] = useState<'lessons' | 'recipes' | 'ear'>('lessons')
   const [mobilePanel, setMobilePanel] = useState<'none' | 'left' | 'right'>('none')
   const [engineReady, setEngineReady] = useState(false)
   const engine = useRef<Engine | null>(null)
@@ -60,10 +73,11 @@ export default function App() {
   }, [chain])
 
   // Structural changes (order, add, remove, enable) rebuild the graph.
-  const structure = useMemo(() => chain.map((p) => `${p.uid}:${p.enabled && !bypassAll ? 1 : 0}`).join('|'), [chain, bypassAll])
+  const effective = useMemo(() => chain.map((p) => ({ ...p, enabled: p.enabled && !bypassAll && p.uid !== holdBypass })), [chain, bypassAll, holdBypass])
+  const structure = useMemo(() => effective.map((p) => `${p.uid}:${p.enabled ? 1 : 0}`).join('|'), [effective])
   useEffect(() => {
     if (!engine.current) return
-    engine.current.rebuild(bypassAll ? chain.map((p) => ({ ...p, enabled: false })) : chain)
+    engine.current.rebuild(effective)
     bump((n) => n + 1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structure])
@@ -95,7 +109,46 @@ export default function App() {
     engine.current?.setParam(uid, id, value)
   }
   const toggle = (uid: string) => setChain((c) => c.map((p) => (p.uid === uid ? { ...p, enabled: !p.enabled } : p)))
+  const knobFromBoard = (uid: string, id: string, t: number) => {
+    const p = chain.find((x) => x.uid === uid)
+    if (!p) return
+    const def = pedalDef(p.type).params.find((d) => d.id === id)
+    if (!def) return
+    let v = sliderToValue(def, t)
+    if (def.step) v = Math.round(v / def.step) * def.step
+    setParam(uid, id, v)
+  }
+  const shareLink = () => {
+    const url = `${location.origin}${location.pathname}?chain=${encodeChain(chain)}`
+    void navigator.clipboard?.writeText(url)
+    history.replaceState(null, '', url)
+    alert('Link copied. Anyone who opens it gets this exact chain.')
+  }
+  const saveTone = () => {
+    const name = prompt('Name this tone', selDef ? `${selDef.name} tone` : 'My tone')
+    if (!name) return
+    const next = [{ name, chain: encodeChain(chain), savedAt: Date.now() }, ...saved.filter((t) => t.name !== name)].slice(0, 40)
+    setSaved(next)
+    storeSavedTones(next)
+  }
+  const deleteTone = (name: string) => {
+    const next = saved.filter((t) => t.name !== name)
+    setSaved(next)
+    storeSavedTones(next)
+  }
+  const openQuiz = () => {
+    quizBackup.current = chain
+    setQuizOpen(true)
+    setLeftTab('ear')
+  }
+  const closeQuiz = () => {
+    if (quizBackup.current) setChain(quizBackup.current)
+    quizBackup.current = null
+    setQuizOpen(false)
+    setLeftTab((t) => (t === 'ear' ? 'lessons' : t))
+  }
   const remove = (uid: string) => {
+    if (chain.find((p) => p.uid === uid)?.type === 'guitar') return
     setChain((c) => c.filter((p) => p.uid !== uid))
     if (selected === uid) setSelected(null)
   }
@@ -126,7 +179,7 @@ export default function App() {
     setSelected(p.uid)
   }
   const loadChain = (build: () => PedalInstance[], riff?: string) => {
-    const next = build()
+    const next = normalizeChain(build())
     setChain(next)
     setSelected(null)
     if (riff) setRiffId(riff)
@@ -153,11 +206,13 @@ export default function App() {
       micHandle.current?.stop()
       micHandle.current = null
       setMic(false)
+      setMicAnalyser(null)
       return
     }
     const e = await ensureEngine()
     try {
       micHandle.current = await openMic(e.ctx, e.input)
+      setMicAnalyser(e.inputTap)
       setMic(true)
     } catch (err) {
       alert(`Could not open the microphone: ${err instanceof Error ? err.message : String(err)}`)
@@ -218,13 +273,58 @@ export default function App() {
       <div className="tl-main">
         <aside className={`tl-panel left ${mobilePanel === 'left' ? 'open' : ''}`}>
           <div className="seg tabs">
-            <button className={`seg-btn ${leftTab === 'lessons' ? 'on' : ''}`} onClick={() => setLeftTab('lessons')}>
+            <button
+              className={`seg-btn ${leftTab === 'lessons' ? 'on' : ''}`}
+              onClick={() => {
+                if (quizOpen) closeQuiz()
+                setLeftTab('lessons')
+              }}
+            >
               Lessons
             </button>
-            <button className={`seg-btn ${leftTab === 'recipes' ? 'on' : ''}`} onClick={() => setLeftTab('recipes')}>
-              Tone recipes
+            <button className={`seg-btn ${leftTab === 'recipes' ? 'on' : ''}`} onClick={() => {
+                if (quizOpen) closeQuiz()
+                setLeftTab('recipes')
+              }}
+            >
+              Recipes
+            </button>
+            <button className={`seg-btn ${leftTab === 'ear' ? 'on' : ''}`} onClick={openQuiz}>
+              Ear training
             </button>
           </div>
+          {leftTab === 'ear' && quizOpen && (
+            <Quiz chain={quizBackup.current ?? chain} apply={(c) => setChain(c)} restore={closeQuiz} playing={playing} onPlay={() => void play()} />
+          )}
+          {leftTab === 'recipes' && (
+            <section>
+              <h3>My tones</h3>
+              <div className="row">
+                <button className="btn small primary" onClick={saveTone}>
+                  Save current chain
+                </button>
+                <button className="btn small" onClick={shareLink}>
+                  Copy share link
+                </button>
+              </div>
+              {saved.length === 0 ? (
+                <p className="dim small">Nothing saved yet. Saved tones live in this browser; share links carry the whole chain in the URL.</p>
+              ) : (
+                <ul className="list">
+                  {saved.map((t) => (
+                    <li key={t.name} className="row between">
+                      <button className="item" style={{ flex: 1 }} onClick={() => loadChain(() => decodeChain(t.chain) ?? chain)}>
+                        <span className="title">{t.name}</span>
+                      </button>
+                      <button className="btn ghost small" onClick={() => deleteTone(t.name)} title="Delete">
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
           {leftTab === 'recipes' && (
             <section>
               <h3>Tone recipes</h3>
@@ -299,7 +399,7 @@ export default function App() {
         </aside>
 
         <div className="tl-stage">
-          <Board chain={bypassAll ? chain.map((p) => ({ ...p, enabled: false })) : chain} selected={selected} onSelect={setSelected} onToggle={toggle} levelRef={levelRef} />
+          <Board chain={effective} selected={selected} onSelect={setSelected} onToggle={toggle} onKnob={knobFromBoard} onMove={moveTo} levelRef={levelRef} hideTypes={quizOpen} />
           <ChainStrip
             chain={chain}
             selected={selected}
@@ -309,6 +409,7 @@ export default function App() {
             onRemove={remove}
             onMove={moveTo}
             onBypassAll={() => setBypassAll((v) => !v)}
+            hideTypes={quizOpen}
           />
         </div>
 
@@ -360,16 +461,30 @@ export default function App() {
                   )
                 })}
               </div>
+              {sel.type === 'delay' && <DelayTempo bpm={riff.bpm} onTime={(ms) => setParam(sel.uid, 'time', ms)} />}
               <div className="row">
-                <button className="btn small" onClick={() => move(sel.uid, -1)} title="Move earlier in the chain">
-                  ← Earlier
+                <button
+                  className={`btn small ${holdBypass === sel.uid ? 'on' : ''}`}
+                  onPointerDown={() => setHoldBypass(sel.uid)}
+                  onPointerUp={() => setHoldBypass(null)}
+                  onPointerLeave={() => setHoldBypass(null)}
+                  title="Hold to hear the chain without this pedal"
+                >
+                  Hold: hear without it
                 </button>
-                <button className="btn small" onClick={() => move(sel.uid, 1)} title="Move later in the chain">
-                  Later →
-                </button>
-                <button className="btn small ghost" onClick={() => remove(sel.uid)}>
-                  Remove
-                </button>
+                {!selDef.fixed && (
+                  <>
+                    <button className="btn small" onClick={() => move(sel.uid, -1)} title="Move earlier in the chain">
+                      ← Earlier
+                    </button>
+                    <button className="btn small" onClick={() => move(sel.uid, 1)} title="Move later in the chain">
+                      Later →
+                    </button>
+                    <button className="btn small ghost" onClick={() => remove(sel.uid)}>
+                      Remove
+                    </button>
+                  </>
+                )}
               </div>
             </section>
           ) : (
@@ -384,7 +499,7 @@ export default function App() {
               <div key={cat} className="addgroup">
                 <div className="dim small">{CATEGORY_NAMES[cat]}</div>
                 <div className="row">
-                  {PEDALS.filter((p) => p.category === cat).map((p) => (
+                  {PEDALS.filter((p) => p.category === cat && !p.fixed).map((p) => (
                     <button key={p.type} className="btn small" style={{ borderColor: p.color }} onClick={() => add(p.type)} title={p.about}>
                       + {p.name}
                     </button>
@@ -408,9 +523,10 @@ export default function App() {
               </option>
             ))}
           </select>
-          <button className={`btn ${mic ? 'on' : ''}`} onClick={() => void toggleMic()} title="Play your own guitar through the chain (use headphones)">
+          <button className={`btn ${mic ? 'on' : ''}`} onClick={() => void toggleMic()} title="Play your own guitar through the chain. Use headphones: speakers will feed back.">
             {mic ? '● Mic on' : '○ Use my guitar (mic)'}
           </button>
+          {mic && <MicMeter analyser={micAnalyser} />}
           <label className="vol">
             <span className="dim small">Volume</span>
             <input type="range" min={0} max={1} step={0.01} value={master} onChange={(e) => setMaster(Number(e.target.value))} />
@@ -431,6 +547,51 @@ export default function App() {
           <TransferPlot curve={transfer} label={sel && transfer ? `clipping curve: ${selDef?.name}` : 'clipping curve'} />
         </div>
       </footer>
+    </div>
+  )
+}
+
+
+/** Tap tempo and note divisions for the delay, based on the riff tempo or your taps. */
+function DelayTempo({ bpm, onTime }: { bpm: number; onTime: (ms: number) => void }) {
+  const taps = useRef<number[]>([])
+  const [tempo, setTempo] = useState(bpm)
+  useEffect(() => setTempo(bpm), [bpm])
+  const tap = () => {
+    const now = performance.now()
+    const recent = [...taps.current.filter((t) => now - t < 3000), now]
+    taps.current = recent
+    if (recent.length >= 2) {
+      const gaps = recent.slice(1).map((t, i) => t - recent[i])
+      const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length
+      setTempo(Math.round(60000 / avg))
+    }
+  }
+  const quarter = 60000 / tempo
+  const divisions: [string, number][] = [
+    ['♩ quarter', quarter],
+    ['♪. dotted 8th', quarter * 0.75],
+    ['♪ eighth', quarter / 2],
+    ['♪₃ triplet', quarter / 3],
+    ['♬ sixteenth', quarter / 4],
+  ]
+  return (
+    <div className="delay-tempo">
+      <div className="row between">
+        <span className="dim small">
+          Tempo <b className="mono">{tempo} bpm</b>
+        </span>
+        <button className="btn small" onClick={tap}>
+          Tap tempo
+        </button>
+      </div>
+      <div className="row">
+        {divisions.map(([label, ms]) => (
+          <button key={label} className="btn small" onClick={() => onTime(Math.max(30, Math.min(1200, Math.round(ms))))} title={`${Math.round(ms)} ms`}>
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

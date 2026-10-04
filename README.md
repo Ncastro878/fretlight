@@ -35,12 +35,16 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 
 Live at `/tone/`. A signal chain simulator with lessons.
 
-- **15 effects and amps** built from Web Audio nodes: clean boost, noise gate, compressor, overdrive (soft clip), distortion (hard clip), fuzz (asymmetric), 3-band EQ, wah/auto-wah, chorus, phaser, tremolo, delay with dark repeats, convolution reverb with synthesized rooms, a four-model amp with tone stack and presence, and a speaker cabinet with mic position.
-- **3D pedalboard**: pedals in chain order with knobs that reflect their settings, LEDs, footswitches to bypass, cable pulses that follow the signal level. Click a pedal to inspect it; reorder with Earlier / Later.
+- **A guitar stage first in every chain**: pickup selector (neck, middle, bridge modelled as comb filtering), volume knob (a gain into everything after it, so a driven amp cleans up when you roll back), and tone knob.
+- **16 effects and amps** built from Web Audio nodes: clean boost, noise gate, compressor, overdrive (soft clip), distortion (hard clip), fuzz (asymmetric), 3-band EQ, wah/auto-wah, chorus, phaser, tremolo, delay with dark repeats, convolution reverb with synthesized rooms, a four-model amp with two cascaded gain stages, inter-stage filtering, power-supply sag, tone stack and presence, and a speaker cabinet with mic position and mic distance (a synthesized room impulse response).
+- **3D pedalboard**: drag a pedal along the board to reorder it, drag a knob up or down to turn it, click the footswitch to bypass, LEDs and cable pulses follow the signal. The chain editor under the board does the same with drag-and-drop cards, arrows, power, and remove buttons.
 - **Scopes**: waveform and spectrum of the dry guitar (grey) against the selected pedal's output (yellow), plus the clipping curve of any drive stage or amp.
 - **Sources**: six built-in riffs (clean arpeggios, power chords, blues lick, funk stabs, slow melody, metal gallop) played by a plucked-string synth, or your own guitar through the mic or an audio interface.
-- **Ten lessons**: signal chain order, gain staging, overdrive vs distortion vs fuzz, EQ and the mids, compression, modulation, delay, reverb, amp and cab, and building the classics. Each step loads a chain and a riff and gives you one thing to turn.
-- **Ten tone recipes**: clean sparkle, blues crunch, classic rock lead, 80s chorus, modern metal, ambient swells, country twang, dotted-eighth delay, woolly fuzz, funk rhythm.
+- **Ear training**: "Which pedal?" hides one effect in front of a clean amp and asks you to name it; "What changed?" moves one knob on your own chain and has you flip A/B to find it.
+- **Save and share**: save chains in the browser, or copy a link that carries the whole chain in the URL.
+- **Delay tap tempo** with quarter, dotted eighth, eighth, triplet, and sixteenth buttons computed from the riff tempo or your taps. **Hold to hear without it** on any pedal. Mic mode shows an input meter and a tuner.
+- **Twelve lessons**: signal chain order, gain staging, overdrive vs distortion vs fuzz, EQ and the mids, compression, modulation, delay, reverb, amp and cab, your guitar as the first pedal, recording the amp, and building the classics. Each step loads a chain and a riff and gives you one thing to turn.
+- **Sixteen tone recipes** described by ingredients: clean sparkle, blues crunch, classic rock lead, 80s chorus, modern metal, ambient swells, country twang, dotted-eighth delay, woolly fuzz, wall of shimmer, surf, jazz box, grunge, stoner doom, volume-knob swells, funk rhythm.
 - **A/B bypass** to hear the dry guitar against the chain at any moment.
 
 Tone Lab lives entirely in `src/tone/` with its own entry (`tone/index.html`) and shares no code with Fretlight, so it can be moved to its own repo by copying that folder and the entry.

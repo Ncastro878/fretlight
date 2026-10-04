@@ -101,6 +101,46 @@ function reverbIR(ctx: AudioContext, decay: number, damping: number): AudioBuffe
 type Builder = (ctx: AudioContext, p: Record<string, number>) => Unit
 
 const builders: Record<string, Builder> = {
+  guitar(ctx, p) {
+    // Pickup position as a feed-forward comb filter: the string's standing
+    // waves cancel at harmonics whose nodes sit over the pickup. Bridge = short
+    // delay (bright, more notches), neck = longer delay (rounder).
+    const inp = mkGain(ctx, 1)
+    const direct = mkGain(ctx, 1)
+    const comb = ctx.createDelay(0.01)
+    const combGain = mkGain(ctx, -0.6)
+    const tone = mkFilter(ctx, 'lowpass', 6000, 0.7)
+    const vol = mkGain(ctx, 1)
+    const body = mkFilter(ctx, 'peaking', 2400, 1.2, 2)
+    const tap = mkTap(ctx)
+    inp.connect(direct).connect(tone)
+    inp.connect(comb).connect(combGain).connect(tone)
+    tone.connect(body).connect(vol).connect(tap)
+    const apply = (q: Record<string, number>) => {
+      const t = ctx.currentTime
+      const pickup = Math.round(q.pickup)
+      comb.delayTime.setTargetAtTime([0.0011, 0.0007, 0.00035][pickup], t, 0.02)
+      body.frequency.setTargetAtTime([1400, 2000, 3200][pickup], t, 0.02)
+      body.gain.setTargetAtTime([1.5, 2, 3][pickup], t, 0.02)
+      // Tone knob: 10 is wide open, 0 is dark. Volume rolls off a little treble too, like a real pot.
+      const toneHz = 900 * Math.pow(7000 / 900, q.tone / 10) * (0.75 + 0.25 * (q.volume / 10))
+      tone.frequency.setTargetAtTime(toneHz, t, 0.02)
+      vol.gain.setTargetAtTime(Math.pow(q.volume / 10, 1.6), t, 0.02)
+    }
+    const state = { ...p }
+    apply(state)
+    return {
+      input: inp,
+      output: vol,
+      tap,
+      setParam: (id, v) => {
+        state[id] = v
+        apply(state)
+      },
+      dispose: () => [inp, direct, comb, combGain, tone, vol, body].forEach((n) => n.disconnect()),
+    }
+  },
+
   boost(ctx, p) {
     const g = mkGain(ctx, dbToGain(p.gain))
     const tap = mkTap(ctx)
@@ -435,23 +475,43 @@ const builders: Record<string, Builder> = {
   },
 
   amp(ctx, p) {
+    // Two cascaded gain stages with filtering between them, like a real preamp,
+    // then a slow compressor for power-supply sag, then the tone stack.
     const inp = mkFilter(ctx, 'highpass', 60)
-    const preGain = mkGain(ctx, 1)
-    const shaper = ctx.createWaveShaper()
-    shaper.oversample = '4x'
+    const pre1 = mkGain(ctx, 1)
+    const stage1 = ctx.createWaveShaper()
+    stage1.oversample = '4x'
+    const inter = mkFilter(ctx, 'highpass', 110) // tightens the low end before the second stage
+    const interLp = mkFilter(ctx, 'lowpass', 7000)
+    const pre2 = mkGain(ctx, 1)
+    const stage2 = ctx.createWaveShaper()
+    stage2.oversample = '4x'
+    const sag = ctx.createDynamicsCompressor()
+    sag.threshold.value = -18
+    sag.ratio.value = 2.5
+    sag.attack.value = 0.02
+    sag.release.value = 0.25
+    sag.knee.value = 10
     const bass = mkFilter(ctx, 'lowshelf', 120, 0.7, 0)
     const mid = mkFilter(ctx, 'peaking', 650, 0.8, 0)
     const treble = mkFilter(ctx, 'highshelf', 2500, 0.7, 0)
     const presence = mkFilter(ctx, 'highshelf', 4500, 0.7, 0)
     const master = mkGain(ctx, 0.5)
     const tap = mkTap(ctx)
-    inp.connect(preGain).connect(shaper).connect(bass).connect(mid).connect(treble).connect(presence).connect(master).connect(tap)
+    inp.connect(pre1).connect(stage1).connect(inter).connect(interLp).connect(pre2).connect(stage2).connect(sag).connect(bass).connect(mid).connect(treble).connect(presence).connect(master).connect(tap)
     let model = Math.round(p.model)
     let gain = p.gain
     const apply = () => {
-      shaper.curve = AMP_CURVES[model](gain)
-      // Higher gain also means more input level into the curve; compensate output a little.
-      preGain.gain.setTargetAtTime(0.6 + gain * 0.12, ctx.currentTime, 0.02)
+      const t = ctx.currentTime
+      // Stage one does most of the work on cleaner models; stage two takes over as gain rises.
+      const g1 = model === 0 ? gain * 0.5 : gain * 0.7
+      const g2 = model === 3 ? gain * 0.9 : gain * 0.45
+      stage1.curve = AMP_CURVES[model](g1)
+      stage2.curve = AMP_CURVES[model === 0 ? 0 : model](g2)
+      pre1.gain.setTargetAtTime(0.7 + gain * 0.1, t, 0.02)
+      pre2.gain.setTargetAtTime(0.8 + gain * 0.08, t, 0.02)
+      inter.frequency.setTargetAtTime([80, 110, 130, 160][model], t, 0.02)
+      sag.threshold.setTargetAtTime(model === 0 ? -8 : -18 - gain, t, 0.02)
     }
     const tone = (id: string, v: number) => {
       const t = ctx.currentTime
@@ -460,7 +520,7 @@ const builders: Record<string, Builder> = {
       if (id === 'mid') mid.gain.setTargetAtTime(db, t, 0.02)
       if (id === 'treble') treble.gain.setTargetAtTime(db, t, 0.02)
       if (id === 'presence') presence.gain.setTargetAtTime((v - 4) * 1.8, t, 0.02)
-      if (id === 'master') master.gain.setTargetAtTime(Math.pow(v / 10, 1.5) * 0.9, t, 0.02)
+      if (id === 'master') master.gain.setTargetAtTime(Math.pow(v / 10, 1.5) * 0.8, t, 0.02)
     }
     apply()
     for (const id of ['bass', 'mid', 'treble', 'presence', 'master']) tone(id, p[id])
@@ -478,21 +538,31 @@ const builders: Record<string, Builder> = {
           apply()
         } else tone(id, v)
       },
-      dispose: () => [inp, preGain, shaper, bass, mid, treble, presence, master].forEach((n) => n.disconnect()),
+      dispose: () => [inp, pre1, stage1, inter, interLp, pre2, stage2, sag, bass, mid, treble, presence, master].forEach((n) => n.disconnect()),
     }
   },
 
   cab(ctx, p) {
-    // A speaker is mostly a steep lowpass plus a low bump and a presence bump.
+    // Speaker: a steep lowpass plus a low bump and a presence bump, then a
+    // synthesized impulse response for the mic distance (early reflections
+    // and a short room tail).
     const lowBump = mkFilter(ctx, 'peaking', 110, 1.2, 3)
     const scoop = mkFilter(ctx, 'peaking', 450, 1.0, -2)
     const pres = mkFilter(ctx, 'peaking', 2400, 1.4, 3)
     const lp1 = mkFilter(ctx, 'lowpass', 5200, 0.9)
     const lp2 = mkFilter(ctx, 'lowpass', 6000, 0.7)
     const hp = mkFilter(ctx, 'highpass', 70)
+    const dry = mkGain(ctx, 1)
+    const room = ctx.createConvolver()
+    const roomGain = mkGain(ctx, 0)
+    const out = mkGain(ctx, 1)
     const tap = mkTap(ctx)
-    hp.connect(lowBump).connect(scoop).connect(pres).connect(lp1).connect(lp2).connect(tap)
-    const apply = (model: number, mic: number) => {
+    hp.connect(lowBump).connect(scoop).connect(pres).connect(lp1).connect(lp2)
+    lp2.connect(dry).connect(out)
+    lp2.connect(room).connect(roomGain).connect(out)
+    out.connect(tap)
+    room.buffer = cabRoomIR(ctx, 1)
+    const apply = (model: number, mic: number, distance: number) => {
       const t = ctx.currentTime
       const m = Math.round(model)
       // Bigger cabs: more low end, darker top. Mic toward the edge: darker and warmer.
@@ -501,22 +571,56 @@ const builders: Record<string, Builder> = {
       lp1.frequency.setTargetAtTime([5600, 5200, 4600][m] * (1 - mic * 0.35), t, 0.02)
       pres.gain.setTargetAtTime(3 - mic * 2.5, t, 0.02)
       hp.frequency.setTargetAtTime([90, 75, 60][m], t, 0.02)
+      // Distance: close mic is dry and present; back it off and the room comes in and proximity bass goes away.
+      roomGain.gain.setTargetAtTime(distance * 0.9, t, 0.02)
+      dry.gain.setTargetAtTime(1 - distance * 0.4, t, 0.02)
+      lowBump.gain.setTargetAtTime([2, 3.5, 5][m] * (1 - distance * 0.6), t, 0.02)
     }
     let model = p.model
     let mic = p.mic
-    apply(model, mic)
+    let distance = p.distance ?? 0.1
+    let rebuild: number | null = null
+    apply(model, mic, distance)
     return {
       input: hp,
-      output: lp2,
+      output: out,
       tap,
       setParam: (id, v) => {
-        if (id === 'model') model = v
+        if (id === 'model') {
+          model = v
+          if (rebuild !== null) window.clearTimeout(rebuild)
+          rebuild = window.setTimeout(() => (room.buffer = cabRoomIR(ctx, Math.round(model))), 100)
+        }
         if (id === 'mic') mic = v
-        apply(model, mic)
+        if (id === 'distance') distance = v
+        apply(model, mic, distance)
       },
-      dispose: () => [hp, lowBump, scoop, pres, lp1, lp2].forEach((n) => n.disconnect()),
+      dispose: () => [hp, lowBump, scoop, pres, lp1, lp2, dry, room, roomGain, out].forEach((n) => n.disconnect()),
     }
   },
+}
+
+/** Short room impulse: a few early reflections and a 0.3 s tail, bigger for bigger cabs. */
+function cabRoomIR(ctx: AudioContext, model: number): AudioBuffer {
+  const rate = ctx.sampleRate
+  const len = Math.floor(rate * 0.35)
+  const buf = ctx.createBuffer(2, len, rate)
+  const reflections = [0.004, 0.009, 0.013, 0.021, 0.03][model] ? [0.004, 0.009, 0.015, 0.024] : [0.004, 0.009, 0.015, 0.024]
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c)
+    for (const r of reflections) {
+      const i = Math.floor((r + c * 0.0007 + model * 0.002) * rate)
+      if (i < len) d[i] += 0.5 / (1 + reflections.indexOf(r))
+    }
+    let lp = 0
+    for (let i = Math.floor(0.02 * rate); i < len; i++) {
+      const env = Math.exp((-6 * i) / len)
+      const n = (Math.random() * 2 - 1) * env * 0.25
+      lp = 0.7 * lp + 0.3 * n
+      d[i] += lp
+    }
+  }
+  return buf
 }
 
 function driveUnit(ctx: AudioContext, p: Record<string, number>, curveFor: (q: Record<string, number>) => Float32Array<ArrayBuffer>, levelScale: number): Unit {

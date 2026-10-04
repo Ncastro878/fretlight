@@ -23,6 +23,8 @@ export interface PedalDef {
   name: string
   category: Category
   color: string
+  /** Always first in the chain and cannot be removed (the guitar itself). */
+  fixed?: boolean
   params: ParamDef[]
   /** One-paragraph explanation for the inspector. */
   about: string
@@ -43,6 +45,20 @@ export const CATEGORY_NAMES: Record<Category, string> = {
 }
 
 export const PEDALS: PedalDef[] = [
+  {
+    type: 'guitar',
+    name: 'Guitar',
+    category: 'utility',
+    color: '#f5d0a9',
+    fixed: true,
+    params: [
+      { id: 'pickup', name: 'Pickup', min: 0, max: 2, default: 2, options: ['Neck', 'Middle', 'Bridge'] },
+      { id: 'volume', name: 'Volume knob', min: 0, max: 10, default: 10 },
+      { id: 'tone', name: 'Tone knob', min: 0, max: 10, default: 10 },
+    ],
+    about: 'The guitar is the first pedal. The pickup position sets which harmonics cancel (neck is round, bridge is bright). The volume knob is a gain control into everything after it: roll it back and a cranked amp cleans up. The tone knob is a low-pass filter.',
+    placement: 'Always first. Learn to play the volume knob and you need fewer pedals.',
+  },
   {
     type: 'boost',
     name: 'Clean boost',
@@ -238,8 +254,9 @@ export const PEDALS: PedalDef[] = [
     params: [
       { id: 'model', name: 'Cabinet', min: 0, max: 2, default: 1, options: ['1x12 open back', '2x12', '4x12 closed'] },
       { id: 'mic', name: 'Mic position', min: 0, max: 1, default: 0.3, step: 0.01 },
+      { id: 'distance', name: 'Mic distance', min: 0, max: 1, default: 0.1, step: 0.01 },
     ],
-    about: 'A guitar speaker rolls off everything above about 5 kHz and has a bump around 100 Hz and 2 to 3 kHz. Without it, distortion sounds like bees. The mic position trades brightness (center) for warmth (edge).',
+    about: 'A guitar speaker rolls off everything above about 5 kHz and has a bump around 100 Hz and 2 to 3 kHz. Without it, distortion sounds like bees. The mic position trades brightness (center) for warmth (edge); distance adds the room.',
     placement: 'Always last. Turning it off is the fastest way to hear why cab simulation exists.',
   },
 ]
@@ -265,4 +282,54 @@ export function makePedal(type: string, params: Partial<Record<string, number>> 
   return { uid: `${type}-${++counter}-${Math.random().toString(36).slice(2, 6)}`, type, enabled, params: p }
 }
 
-export const DEFAULT_CHAIN = (): PedalInstance[] => [makePedal('overdrive'), makePedal('delay'), makePedal('reverb'), makePedal('amp'), makePedal('cab')]
+export const DEFAULT_CHAIN = (): PedalInstance[] => [makePedal('guitar'), makePedal('overdrive'), makePedal('delay'), makePedal('reverb'), makePedal('amp'), makePedal('cab')]
+
+/** Make sure the fixed guitar stage is present and first. */
+export function normalizeChain(chain: PedalInstance[]): PedalInstance[] {
+  const guitar = chain.find((p) => p.type === 'guitar') ?? makePedal('guitar')
+  return [guitar, ...chain.filter((p) => p.type !== 'guitar')]
+}
+
+// ----- Save and share -----
+
+interface Packed {
+  t: string
+  e: 0 | 1
+  p: Record<string, number>
+}
+
+export function encodeChain(chain: PedalInstance[]): string {
+  const packed: Packed[] = chain.map((p) => ({ t: p.type, e: p.enabled ? 1 : 0, p: p.params }))
+  const json = JSON.stringify(packed)
+  return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export function decodeChain(text: string): PedalInstance[] | null {
+  try {
+    const b64 = text.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(escape(atob(b64)))
+    const packed = JSON.parse(json) as Packed[]
+    if (!Array.isArray(packed)) return null
+    return normalizeChain(packed.filter((x) => PEDALS.some((d) => d.type === x.t)).map((x) => makePedal(x.t, x.p, x.e !== 0)))
+  } catch {
+    return null
+  }
+}
+
+export interface SavedTone {
+  name: string
+  chain: string
+  savedAt: number
+}
+const SAVED_KEY = 'tonelab.tones.v1'
+export function loadSavedTones(): SavedTone[] {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY)
+    return raw ? (JSON.parse(raw) as SavedTone[]) : []
+  } catch {
+    return []
+  }
+}
+export function storeSavedTones(list: SavedTone[]): void {
+  localStorage.setItem(SAVED_KEY, JSON.stringify(list))
+}
