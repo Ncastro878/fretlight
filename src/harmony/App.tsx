@@ -315,7 +315,7 @@ export default function App() {
             onSelect={setSelected}
             showKey={showKey}
           />
-          <div className="legend dim small">
+          <div className="hz-legend dim small">
             <span><i className="sw melody" /> melody note</span>
             <span><i className="sw sel" /> selected</span>
             <span><i className="sw chord" /> chord under it (finger numbers)</span>

@@ -95,39 +95,39 @@ export function MiniDiagram({ frets, fingers, melodyString }: { frets: number[];
   const fretted = frets.filter((f) => f > 0)
   const base = fretted.length ? Math.max(1, Math.min(...fretted)) : 1
   const rows = 5
-  const w = 64
-  const h = 74
-  const left = 10
-  const top = 16
+  const w = 84
+  const h = 96
+  const left = 14
+  const top = 20
   const gapX = (w - left * 2) / 5
   const gapY = (h - top - 6) / rows
   return (
     <svg className="mini" viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
       {base > 1 && (
-        <text x={1} y={top + gapY * 0.75} fontSize={8} fill="#8b94a5">
-          {base}
+        <text x={1} y={top + gapY * 0.75} fontSize={10} fill="#e6e9ef">
+          {base}fr
         </text>
       )}
-      <line x1={left} x2={left + gapX * 5} y1={top} y2={top} stroke="#e6e9ef" strokeWidth={base === 1 ? 3 : 1} />
+      <line x1={left} x2={left + gapX * 5} y1={top} y2={top} stroke="#e6e9ef" strokeWidth={base === 1 ? 4 : 1.2} />
       {Array.from({ length: rows }, (_, r) => (
-        <line key={r} x1={left} x2={left + gapX * 5} y1={top + (r + 1) * gapY} y2={top + (r + 1) * gapY} stroke="#4b5563" strokeWidth={1} />
+        <line key={r} x1={left} x2={left + gapX * 5} y1={top + (r + 1) * gapY} y2={top + (r + 1) * gapY} stroke="#6b7280" strokeWidth={1} />
       ))}
       {frets.map((f, s) => {
         const cx = left + s * gapX
         if (f < 0)
           return (
-            <text key={s} x={cx} y={top - 5} textAnchor="middle" fontSize={9} fill="#8b94a5">
+            <text key={s} x={cx} y={top - 6} textAnchor="middle" fontSize={11} fill="#9ca3af">
               ×
             </text>
           )
         if (f === 0)
-          return <circle key={s} cx={cx} cy={top - 7} r={3} fill="none" stroke={s === melodyString ? '#facc15' : '#e6e9ef'} strokeWidth={1.2} />
+          return <circle key={s} cx={cx} cy={top - 9} r={4} fill="none" stroke={s === melodyString ? '#facc15' : '#e6e9ef'} strokeWidth={1.6} />
         const row = f - base + 1
         return (
           <g key={s}>
-            <circle cx={cx} cy={top + (row - 0.5) * gapY} r={5} fill={s === melodyString ? '#facc15' : '#e6e9ef'} />
+            <circle cx={cx} cy={top + (row - 0.5) * gapY} r={6.5} fill={s === melodyString ? '#facc15' : '#e6e9ef'} />
             {fingers && fingers[s] > 0 && (
-              <text x={cx} y={top + (row - 0.5) * gapY + 3} textAnchor="middle" fontSize={7} fontWeight={700} fill="#0b0f14">
+              <text x={cx} y={top + (row - 0.5) * gapY + 3.5} textAnchor="middle" fontSize={9} fontWeight={700} fill="#0b0f14">
                 {fingers[s]}
               </text>
             )}
@@ -135,7 +135,7 @@ export function MiniDiagram({ frets, fingers, melodyString }: { frets: number[];
         )
       })}
       {frets.map((_, s) => (
-        <line key={`s${s}`} x1={left + s * gapX} x2={left + s * gapX} y1={top} y2={top + rows * gapY} stroke="#9ca3af" strokeWidth={0.8} />
+        <line key={`s${s}`} x1={left + s * gapX} x2={left + s * gapX} y1={top} y2={top + rows * gapY} stroke="#9ca3af" strokeWidth={1} />
       ))}
     </svg>
   )
