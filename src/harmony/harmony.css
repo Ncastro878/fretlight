@@ -19,7 +19,8 @@
 .chordrow { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
 .chordrow.chosen { border-color: var(--accent); background: rgba(250, 204, 21, 0.06); }
 .chordhead { display: grid; grid-template-columns: 84px 1fr auto; gap: 10px; align-items: center; cursor: pointer; }
-.mini { display: block; }
+.chorddiag { display: block; width: 84px; height: 96px; }
+.hz-legend span { white-space: nowrap; }
 .chordname { font-weight: 700; font-size: 15px; }
 .numeral { font-weight: 500; font-size: 12px; }
 .chordactions { display: flex; flex-direction: column; gap: 4px; }

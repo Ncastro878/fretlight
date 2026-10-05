@@ -102,7 +102,7 @@ export function MiniDiagram({ frets, fingers, melodyString }: { frets: number[];
   const gapX = (w - left * 2) / 5
   const gapY = (h - top - 6) / rows
   return (
-    <svg className="mini" viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
+    <svg className="chorddiag" viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
       {base > 1 && (
         <text x={1} y={top + gapY * 0.75} fontSize={10} fill="#e6e9ef">
           {base}fr
