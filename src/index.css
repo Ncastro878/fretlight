@@ -154,3 +154,7 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .drill .feedback.ok { color: #4ade80; }
 .drill .feedback.bad { color: #f87171; }
 .row.between { justify-content: space-between; }
+
+.instrument { display: inline-flex; align-items: center; gap: 5px; }
+.instrument select { background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 5px 6px; font: inherit; max-width: 190px; }
+.app.mobile .instrument select { max-width: 150px; font-size: 12px; }

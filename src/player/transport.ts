@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { Synth } from '../audio/synth'
+import { Sampler } from '../audio/sampler'
+import { INSTRUMENTS, loadInstrumentChoice, saveInstrumentChoice, type Instrument, type InstrumentId } from '../audio/instrument'
 import { articulationOf, midiOf, songLength, type Song, type SongNote } from '../model/song'
 
 export interface LoopRange {
@@ -25,6 +27,9 @@ export interface TransportState {
   metronome: boolean
   countIn: boolean
   ramp: Ramp | null
+  instrument: InstrumentId
+  /** Samples for the current song are still downloading. */
+  instrumentLoading: boolean
 }
 
 const LOOKAHEAD_SEC = 0.15
@@ -45,7 +50,9 @@ export class Transport {
   private ramp: Ramp | null = null
 
   private ctx: AudioContext | null = null
-  private synth: Synth | null = null
+  private synth: Instrument | null = null
+  private instrumentId: InstrumentId = loadInstrumentChoice()
+  private instrumentLoading = false
   private anchorBeat = 0
   private anchorTime = 0
   private pausedBeat = 0
@@ -89,6 +96,8 @@ export class Transport {
       metronome: this.metronome,
       countIn: this.countIn,
       ramp: this.ramp,
+      instrument: this.instrumentId,
+      instrumentLoading: this.instrumentLoading,
     }
   }
 
@@ -106,9 +115,48 @@ export class Transport {
 
   // ----- Controls -----
 
+  /** Pick what the notes sound like. Takes effect immediately; samples download on demand. */
+  setInstrument(id: InstrumentId): void {
+    this.instrumentId = id
+    saveInstrumentChoice(id)
+    if (this.ctx) {
+      const wasPlaying = this.playing
+      const pos = this.position()
+      if (wasPlaying) this.pause()
+      this.synth = this.makeInstrument(this.ctx)
+      void this.warm()
+      if (wasPlaying) {
+        this.pausedBeat = Math.max(0, pos)
+        void this.play()
+      }
+    }
+    this.emit()
+  }
+
+  private makeInstrument(ctx: AudioContext): Instrument {
+    const def = INSTRUMENTS.find((i) => i.id === this.instrumentId) ?? INSTRUMENTS[0]
+    if (!def.samples) return new Synth(ctx)
+    return new Sampler(ctx, def)
+  }
+
+  /** Download the samples this song needs. */
+  private async warm(): Promise<void> {
+    const inst = this.synth
+    if (!inst?.prepare) return
+    this.instrumentLoading = true
+    this.emit()
+    try {
+      await inst.prepare(this.song.notes.map((n) => midiOf(this.song, n)))
+    } finally {
+      this.instrumentLoading = false
+      this.emit()
+    }
+  }
+
   setSong(song: Song, opts: { loopAll?: boolean } = {}): void {
     this.pause()
     this.song = song
+    if (this.synth) void this.warm()
     this.pausedBeat = 0
     this.loop = opts.loopAll ? { a: 0, b: songLength(song) } : null
     this.loopEnabled = this.loop !== null
@@ -120,9 +168,12 @@ export class Transport {
     if (this.playing) return
     if (!this.ctx) {
       this.ctx = new AudioContext()
-      this.synth = new Synth(this.ctx)
+      this.synth = this.makeInstrument(this.ctx)
     }
     if (this.ctx.state === 'suspended') await this.ctx.resume()
+    // Make sure the first notes are not swallowed while samples download.
+    await this.warm()
+    if (this.playing) return
     const end = this.endBeat()
     if (this.pausedBeat >= end - 1e-6) this.pausedBeat = this.loopEnabled && this.loop ? this.loop.a : 0
     this.anchorBeat = this.pausedBeat

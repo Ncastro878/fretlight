@@ -18,6 +18,7 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 - **Transport**: play/pause, speeds from 0.25x to 1.5x, bar-snapped A/B loop, scrub bar, keyboard shortcuts (Space, arrows, A, B, L).
 - **Song library** of public domain pieces: Ode to Joy, House of the Rising Sun, Greensleeves, Für Elise, Moonlight Sonata.
 - **Learn tab**: a five-course curriculum (Foundations, Scales and Keys, Harmony, Technique, Styles), 18 lessons, 73 steps. Every step loads something onto the neck and plays it: interval pairs, triads and inversions, scale positions with the key lit, modes over a drone, progressions with the current chord's tones lit, seventh chords, picking and legato drills with the speed trainer, sweep shapes, strum patterns, and blues, rock, and shred vocabulary. Includes a note-naming drill. Progress is saved in the browser.
+- **Instruments**: pick what the notes sound like from the 🎸 menu in the transport. Clean, crunch, and distorted electric (clean samples through a built-in overdrive, amp, and cabinet), the General MIDI overdriven and distortion guitars, jazz electric, steel-string and nylon acoustics, or the original plucked-string synth. Samples download per note on demand (about 20 KB each) and are cached. Your choice is remembered.
 - **Neck overlays**: Key (every in-key note, roots highlighted) or Chord tones (root, third, fifth of the chord playing right now, following the song's sections).
 - **Practice tab** with a scale builder: any root, 13 scales and modes, 3-note-per-string positions, pentatonic boxes and CAGED-style windows, one-string runs, and picking patterns (up/down, groups of 3 and 4, thirds, string skipping) at any note value and tempo. Exercises loop by default.
 - **Speed trainer**: add a few bpm every time the loop wraps until a ceiling, plus a metronome click and a one-bar count-in.
@@ -92,6 +93,10 @@ Songs and licks are written as text, one voice at a time, in `src/model/tabdsl.t
 - `src/import/` Guitar Pro / MusicXML importer (alphaTab) and the ASCII tab parser.
 - `src/scene/` react-three-fiber guitar, marker pool, camera presets.
 - `src/ui/` panels, transport bar, tab strip.
+
+## Audio credits
+
+Guitar samples in `public/sf/` are rendered from the FluidR3_GM SoundFont (Frank Wen, Creative Commons Attribution 3.0) via Benjamin Gleitzman's [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Crunch and distorted tones are those clean samples through an in-app amp simulation.
 
 ## Notes on the bundled sample files
 

@@ -3,6 +3,7 @@ import type { Transport } from '../player/transport'
 import { useTransportState } from '../player/transport'
 import { formatBeat, formatClock } from './format'
 import { trackRole, type LoadedScore } from '../import/alphatab'
+import { INSTRUMENTS, type InstrumentId } from '../audio/instrument'
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5]
 
@@ -17,7 +18,7 @@ interface Props {
 
 export function TransportBar({ transport, compact = false, parts = null, onPart }: Props) {
   const state = useTransportState(transport)
-  const { song, playing, speed, loop, loopEnabled, length, bpm, metronome } = state
+  const { song, playing, speed, loop, loopEnabled, length, bpm, metronome, instrument, instrumentLoading } = state
   const [pos, setPos] = useState(0)
   const dragging = useRef(false)
   const rail = useRef<HTMLDivElement>(null)
@@ -115,6 +116,23 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
       <span>{bpm}</span>
     </div>
   )
+  const instrumentPicker = (
+    <label className="instrument" title={INSTRUMENTS.find((i) => i.id === instrument)?.blurb}>
+      <span className="dim small">🎸</span>
+      <select value={instrument} onChange={(e) => transport.setInstrument(e.target.value as InstrumentId)}>
+        {(['Electric', 'Acoustic', 'Other'] as const).map((g) => (
+          <optgroup key={g} label={g}>
+            {INSTRUMENTS.filter((i) => i.group === g).map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      {instrumentLoading && <span className="dim small">loading…</span>}
+    </label>
+  )
   const clickButton = (
     <button className={`btn ${metronome ? 'on' : ''}`} onClick={() => transport.setMetronome(!metronome)} title="Metronome click">
       ♩ Click
@@ -197,6 +215,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
           <div className="transport-row">
             {speedButtons}
             {clickButton}
+            {instrumentPicker}
             <div className="spacer" />
             {loopButtons}
           </div>
@@ -206,6 +225,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
           {playButtons}
           {speedButtons}
           {clickButton}
+          {instrumentPicker}
           {clock}
           <div className="spacer" />
           {loopButtons}
