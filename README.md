@@ -1,6 +1,6 @@
 # Fretlight + Tone Lab
 
-Two guitar learning apps in one repo. **Fretlight** (at `/`) teaches songs, scales, licks, and chords on a 3D neck. **Tone Lab** (at `/tone/`) teaches how guitar tone is built: a pedalboard you hear, see, and take apart.
+Three guitar learning apps in one repo. **Fretlight** (at `/`) teaches songs, scales, licks, and chords on a 3D neck. **Tone Lab** (at `/tone/`) teaches how guitar tone is built: a pedalboard you hear, see, and take apart. **Harmonizer** (at `/harmony/`) is a chord-melody builder: click a melody on the neck and see every chord in the key that fits under each note, easiest first.
 
 # Fretlight
 
@@ -31,6 +31,15 @@ The audio is synthesized in the browser with a plucked-string model (Karplus-Str
 - **Import** Guitar Pro files (.gp3, .gp4, .gp5, .gpx, .gp) and MusicXML via [alphaTab](https://www.alphatab.net/), with a track picker for multi-track files. Files are parsed in the browser and never uploaded. Seven sample classical guitar files are bundled.
 - **Paste ASCII tab** as a best-effort import. ASCII tabs have no rhythm, so each column plays as an eighth note.
 - **Shareable links**: `?song=<id>&at=<beat>&view=lap|neck|front|top&play=1`.
+
+# Harmonizer
+
+Live at `/harmony/`. Pick a key (or detect it), click the frets of a melody in order, and for the selected note the tool lists every diatonic chord that contains it, voiced with that note on top.
+
+- **Chord set**: every chord on every scale degree whose notes all sit in the key, from triads through sus, 6, add9, sevenths, 9ths, 11ths, 13ths, and 6/9. Minor keys add the harmonic-minor V7 and vii°7. Roman numerals and the melody's role (3rd, 7th, 9th…) are shown.
+- **Voicing search**: strings below the melody are searched within a five-fret window plus open strings. Triads need root and third, sevenths need third and seventh (rootless shells allowed), extensions need the extension plus third and seventh. Double stops (a third or sixth under the melody) stand in for triads.
+- **Difficulty ranking**: strings used, fingers after barre detection, fret span, barres, muted inner strings, chord complexity, and whether the melody is a tension. Tiers from Beginner to Expert; each chord shows its easiest full voicing first with alternatives behind it.
+- Click any diagram to hear it on the sampled guitar, Use to put it under the note, set each note's length, and play the arrangement. Copy as tab, copy a share link, or open it on the 3D neck in Fretlight.
 
 # Tone Lab
 

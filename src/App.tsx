@@ -20,7 +20,17 @@ const MOBILE_QUERY = '(max-width: 900px)'
 type Drawer = 'none' | 'songs' | 'notes'
 
 export default function App() {
-  const transport = useMemo(() => new Transport(LIBRARY.find((s) => s.id === params.get('song')) ?? LIBRARY[0]), [])
+  const transport = useMemo(() => {
+    if (params.get('handoff')) {
+      try {
+        const raw = localStorage.getItem('fretlight.handoff')
+        if (raw) return new Transport(JSON.parse(raw) as Song)
+      } catch {
+        // fall through to the library
+      }
+    }
+    return new Transport(LIBRARY.find((s) => s.id === params.get('song')) ?? LIBRARY[0])
+  }, [])
   const { song } = useTransportState(transport)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches)
   const [drawer, setDrawer] = useState<Drawer>('none')
@@ -114,6 +124,9 @@ export default function App() {
         </div>
         <div className="row">
           <span className="dim small tagline">Watch the frets light up, slow it down, loop the hard part.</span>
+          <a className="btn small" href="/harmony/" title="Chord-melody builder: which chords fit under each melody note">
+            Harmonizer →
+          </a>
           <a className="btn small" href="/tone/" title="Build and understand guitar tones">
             Tone Lab →
           </a>
