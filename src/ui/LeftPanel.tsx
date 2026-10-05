@@ -25,6 +25,7 @@ const SAMPLE_GROUPS: { title: string; items: { label: string; file: string }[] }
   {
     title: 'Rock',
     items: [
+      { label: 'Jimi Hendrix · All Along the Watchtower', file: 'rock/hendrix--all-along-the-watchtower.gp3' },
       { label: 'Metallica · Enter Sandman', file: 'rock/metallica--enter-sandman.gp3' },
       { label: 'Metallica · Nothing Else Matters', file: 'rock/metallica--nothing-else-matters.gp4' },
       { label: 'Metallica · Master of Puppets', file: 'rock/metallica--master-of-puppets.gp3' },
