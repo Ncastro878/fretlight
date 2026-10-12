@@ -18,7 +18,7 @@ interface Props {
 
 export function TransportBar({ transport, compact = false, parts = null, onPart }: Props) {
   const state = useTransportState(transport)
-  const { song, playing, speed, loop, loopEnabled, length, bpm, metronome, instrument, instrumentLoading } = state
+  const { song, playing, speed, loop, loopEnabled, length, bpm, metronome, countIn, instrument, instrumentLoading } = state
   const [pos, setPos] = useState(0)
   const dragging = useRef(false)
   const rail = useRef<HTMLDivElement>(null)
@@ -161,6 +161,11 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
       ♩ Click
     </button>
   )
+  const countInButton = (
+    <button className={`btn ${countIn ? 'on' : ''}`} onClick={() => transport.setCountIn(!countIn)} title="Count 3 beats before playback starts">
+      1·2·3 Count-in
+    </button>
+  )
   const loopButtons = (
     <div className="loop-controls">
       <button className="btn" onClick={setA} title="Set loop start at this bar (A)">
@@ -238,6 +243,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
           <div className="transport-row">
             {speedButtons}
             {clickButton}
+            {countInButton}
             {instrumentPicker}
             <div className="spacer" />
             {loopButtons}
@@ -248,6 +254,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
           {playButtons}
           {speedButtons}
           {clickButton}
+          {countInButton}
           {instrumentPicker}
           {clock}
           <div className="spacer" />
