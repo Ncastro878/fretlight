@@ -64,12 +64,20 @@ export interface Section {
   name: string
 }
 
+export interface TempoChange {
+  beat: number
+  /** Quarter notes per minute from this beat on. */
+  bpm: number
+}
+
 export interface Song {
   id: string
   title: string
   composer: string
-  /** Quarter notes per minute. */
+  /** Quarter notes per minute at the start of the song. */
   tempo: number
+  /** Tempo changes after the start, sorted by beat (from the tab file). */
+  tempoChanges?: TempoChange[]
   beatsPerBar: number
   /** MIDI note of each open string, lowest string first. */
   tuning: number[]
@@ -101,4 +109,45 @@ export function songLength(song: Song): number {
 
 export function sortNotes(notes: SongNote[]): SongNote[] {
   return [...notes].sort((a, b) => a.time - b.time || a.string - b.string)
+}
+
+/** Tempo in effect at a beat, following the song's tempo changes. */
+export function tempoAt(song: Song, beat: number): number {
+  let bpm = song.tempo
+  for (const c of song.tempoChanges ?? []) {
+    if (c.beat > beat) break
+    bpm = c.bpm
+  }
+  return bpm
+}
+
+/** Seconds from beat 0 to `beat` at normal speed, following tempo changes. Negative beats use the start tempo. */
+export function secondsAt(song: Song, beat: number): number {
+  let bpm = song.tempo
+  if (beat <= 0) return (beat * 60) / bpm
+  let sec = 0
+  let prev = 0
+  for (const c of song.tempoChanges ?? []) {
+    if (c.beat >= beat) break
+    sec += ((c.beat - prev) * 60) / bpm
+    prev = c.beat
+    bpm = c.bpm
+  }
+  return sec + ((beat - prev) * 60) / bpm
+}
+
+/** Inverse of secondsAt: the beat reached after `sec` seconds at normal speed. */
+export function beatAtSeconds(song: Song, sec: number): number {
+  let bpm = song.tempo
+  if (sec <= 0) return (sec * bpm) / 60
+  let acc = 0
+  let prev = 0
+  for (const c of song.tempoChanges ?? []) {
+    const segSec = ((c.beat - prev) * 60) / bpm
+    if (acc + segSec > sec) break
+    acc += segSec
+    prev = c.beat
+    bpm = c.bpm
+  }
+  return prev + ((sec - acc) * bpm) / 60
 }

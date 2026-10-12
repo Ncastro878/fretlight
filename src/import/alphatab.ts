@@ -1,6 +1,6 @@
 import type * as alphaTab from '@coderline/alphatab'
 import { assignFingers } from '../model/fingers'
-import { sortNotes, type Section, type Song, type SongNote } from '../model/song'
+import { sortNotes, type Section, type Song, type SongNote, type TempoChange } from '../model/song'
 
 const TICKS_PER_BEAT = 960
 
@@ -130,6 +130,22 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
       beatsPerBar = bpb
     }
   }
+  // Tempo changes inside the file (Stairway speeds up, for example).
+  let startTempo = score.tempo || 120
+  const tempoChanges: TempoChange[] = []
+  for (const mb of score.masterBars) {
+    for (const a of mb.tempoAutomations ?? []) {
+      if (a.value <= 0) continue
+      const beat = (mb.start + a.ratioPosition * mb.calculateDuration()) / TICKS_PER_BEAT
+      if (beat < 1e-3) {
+        startTempo = a.value
+        continue
+      }
+      const current = tempoChanges.length ? tempoChanges[tempoChanges.length - 1].bpm : startTempo
+      if (a.value !== current) tempoChanges.push({ beat, bpm: a.value })
+    }
+  }
+
   const sections: Section[] = []
   for (const mb of score.masterBars) {
     if (mb.section && (mb.section.text || mb.section.marker)) {
@@ -144,7 +160,8 @@ export function scoreToSong(score: alphaTab.model.Score, trackIndex: number, fil
     id: `import-${Date.now()}`,
     title: track.name && score.tracks.length > 1 ? `${title} (${track.name})` : title,
     composer,
-    tempo: score.tempo || 120,
+    tempo: startTempo,
+    tempoChanges: tempoChanges.length ? tempoChanges : undefined,
     beatsPerBar,
     tuning,
     notes: sortNotes(notes),

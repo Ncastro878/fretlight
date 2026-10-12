@@ -20,6 +20,9 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
   const state = useTransportState(transport)
   const { song, playing, speed, loop, loopEnabled, length, bpm, metronome, countIn, instrument, instrumentLoading } = state
   const [pos, setPos] = useState(0)
+  const [liveBpm, setLiveBpm] = useState(bpm)
+  const [bpmDraft, setBpmDraft] = useState<string | null>(null)
+  const bpmCancel = useRef(false)
   const dragging = useRef(false)
   const rail = useRef<HTMLDivElement>(null)
 
@@ -27,6 +30,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
     let raf = 0
     const loop = () => {
       if (!dragging.current) setPos(Math.max(0, transport.position()))
+      setLiveBpm(transport.currentBpm())
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -129,14 +133,40 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
       ))}
     </div>
   )
+  const commitBpm = () => {
+    const v = Number(bpmDraft)
+    if (!bpmCancel.current && v >= 20 && v <= 300) transport.setBpm(v)
+    bpmCancel.current = false
+    setBpmDraft(null)
+  }
+  const bpmInput = (
+    <label className="bpm-input" title="Tempo you hear now. Type an exact BPM and press Enter.">
+      <span className="dim small">♩</span>
+      <input
+        type="number"
+        min={20}
+        max={300}
+        value={bpmDraft ?? liveBpm}
+        onFocus={(e) => {
+          setBpmDraft(String(liveBpm))
+          e.target.select()
+        }}
+        onChange={(e) => setBpmDraft(e.target.value)}
+        onBlur={commitBpm}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') bpmCancel.current = true
+          if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
+        }}
+      />
+      <span className="dim small">bpm</span>
+    </label>
+  )
   const clock = (
     <div className="clock mono">
       <span>{formatClock(song, pos, speed)}</span>
       <span className="dim"> / {formatClock(song, length, speed)}</span>
       <span className="dim"> · bar </span>
       <span>{formatBeat(song, pos)}</span>
-      <span className="dim"> · ♩ </span>
-      <span>{bpm}</span>
     </div>
   )
   const instrumentPicker = (
@@ -242,6 +272,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
           </div>
           <div className="transport-row">
             {speedButtons}
+            {bpmInput}
             {clickButton}
             {countInButton}
             {instrumentPicker}
@@ -253,6 +284,7 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
         <div className="transport-row">
           {playButtons}
           {speedButtons}
+          {bpmInput}
           {clickButton}
           {countInButton}
           {instrumentPicker}

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { Synth } from '../audio/synth'
 import { Sampler } from '../audio/sampler'
 import { INSTRUMENTS, loadInstrumentChoice, saveInstrumentChoice, type Instrument, type InstrumentId } from '../audio/instrument'
-import { articulationOf, midiOf, songLength, type Song, type SongNote } from '../model/song'
+import { articulationOf, beatAtSeconds, midiOf, secondsAt, songLength, tempoAt, type Song, type SongNote } from '../model/song'
 
 export interface LoopRange {
   a: number
@@ -19,7 +19,7 @@ export interface TransportState {
   song: Song
   playing: boolean
   speed: number
-  /** Effective tempo in beats per minute (song tempo times speed). */
+  /** Effective start tempo in beats per minute (song tempo times speed). For the live tempo use currentBpm(). */
   bpm: number
   loop: LoopRange | null
   loopEnabled: boolean
@@ -105,14 +105,28 @@ export class Transport {
 
   // ----- Clock -----
 
-  private beatsPerSecond(speed = this.speed): number {
-    return (this.song.tempo * speed) / 60
+  // Beats map to audio time through the song's tempo map: `anchorBeat` plays at
+  // `anchorTime`, and the song's own seconds are divided by the playback speed.
+
+  /** Audio time at which a beat plays, relative to an anchor. */
+  private timeAt(beat: number, anchorBeat = this.anchorBeat, anchorTime = this.anchorTime, speed = this.speed): number {
+    return anchorTime + (secondsAt(this.song, beat) - secondsAt(this.song, anchorBeat)) / speed
+  }
+
+  /** Beat playing at an audio time, relative to an anchor. */
+  private beatAtTime(time: number): number {
+    return beatAtSeconds(this.song, secondsAt(this.song, this.anchorBeat) + (time - this.anchorTime) * this.speed)
   }
 
   /** Current position in beats. Negative during a count-in. Safe to call every frame. */
   position(): number {
     if (!this.playing || !this.ctx) return this.pausedBeat
-    return this.anchorBeat + (this.ctx.currentTime - this.anchorTime) * this.beatsPerSecond()
+    return this.beatAtTime(this.ctx.currentTime)
+  }
+
+  /** Tempo you hear right now, following the song's tempo changes and the speed. */
+  currentBpm(): number {
+    return Math.round(tempoAt(this.song, Math.max(0, this.position())) * this.speed)
   }
 
   // ----- Controls -----
@@ -182,7 +196,7 @@ export class Transport {
     this.anchorBeat = this.pausedBeat
     this.anchorTime = this.ctx.currentTime + 0.05
     if (opts.countIn ?? this.countIn) {
-      const beatSec = 1 / this.beatsPerSecond()
+      const beatSec = 60 / (tempoAt(this.song, this.pausedBeat) * this.speed)
       this.anchorTime += COUNT_IN_BEATS * beatSec
       for (let k = 0; k < COUNT_IN_BEATS; k++) this.synth?.click(this.anchorTime - (COUNT_IN_BEATS - k) * beatSec, k === 0)
     }
@@ -246,9 +260,9 @@ export class Transport {
     this.emit()
   }
 
-  /** Set the effective tempo directly, in beats per minute. */
+  /** Set the tempo you hear at the current position, in beats per minute. */
   setBpm(bpm: number): void {
-    this.setSpeed(Math.max(10, bpm) / this.song.tempo)
+    this.setSpeed(Math.max(10, bpm) / tempoAt(this.song, Math.max(0, this.position())))
   }
 
   setLoop(loop: LoopRange | null): void {
@@ -292,9 +306,8 @@ export class Transport {
 
   private tick(): void {
     if (!this.playing || !this.ctx || !this.synth) return
-    let bps = this.beatsPerSecond()
     const now = this.ctx.currentTime
-    let pos = this.anchorBeat + (now - this.anchorTime) * bps
+    let pos = this.beatAtTime(now)
     const end = this.endBeat()
     const looping = this.loopEnabled && this.loop !== null
 
@@ -311,52 +324,53 @@ export class Transport {
         return
       }
       const loop = this.loop as LoopRange
-      const loopStartTime = this.anchorTime + (end - this.anchorBeat) / bps
+      const loopStartTime = this.timeAt(end)
       if (this.pendingSpeed !== null) {
         this.speed = this.pendingSpeed
         this.pendingSpeed = null
-        bps = this.beatsPerSecond()
         this.emit()
       }
       this.anchorTime = loopStartTime
       this.anchorBeat = loop.a
       this.scheduledUntil = Math.max(loop.a, this.wrappedUntil)
       this.wrappedUntil = loop.a
-      pos = this.anchorBeat + (now - this.anchorTime) * bps
+      pos = this.beatAtTime(now)
     }
 
-    const horizon = pos + LOOKAHEAD_SEC * bps
+    const horizonTime = now + LOOKAHEAD_SEC
+    const horizon = this.beatAtTime(horizonTime)
     const upTo = Math.min(horizon, end)
     if (upTo > this.scheduledUntil) {
-      this.scheduleRange(this.scheduledUntil, upTo, bps, (beat) => this.anchorTime + (beat - this.anchorBeat) / bps)
+      this.scheduleRange(this.scheduledUntil, upTo, (beat) => this.timeAt(beat))
       this.scheduledUntil = upTo
     }
 
     if (looping && horizon > end) {
       const loop = this.loop as LoopRange
-      const loopStartTime = this.anchorTime + (end - this.anchorBeat) / bps
+      const loopStartTime = this.timeAt(end)
       if (this.pendingSpeed === null) {
         this.pendingSpeed = this.ramp
           ? Math.min(this.ramp.maxBpm / this.song.tempo, this.speed + this.ramp.stepBpm / this.song.tempo)
           : this.speed
       }
-      const nextBps = this.beatsPerSecond(this.pendingSpeed)
-      const wrapTo = loop.a + ((horizon - end) / bps) * nextBps
+      const nextSpeed = this.pendingSpeed
+      const wrapTo = beatAtSeconds(this.song, secondsAt(this.song, loop.a) + (horizonTime - loopStartTime) * nextSpeed)
       if (wrapTo > this.wrappedUntil) {
-        this.scheduleRange(this.wrappedUntil, wrapTo, nextBps, (beat) => loopStartTime + (beat - loop.a) / nextBps)
+        this.scheduleRange(this.wrappedUntil, wrapTo, (beat) => this.timeAt(beat, loop.a, loopStartTime, nextSpeed))
         this.wrappedUntil = wrapTo
       }
     }
   }
 
-  private scheduleRange(from: number, to: number, bps: number, timeOf: (beat: number) => number): void {
+  private scheduleRange(from: number, to: number, timeOf: (beat: number) => number): void {
     const synth = this.synth
     if (!synth) return
     const notes = this.song.notes
     let i = lowerBound(notes, from)
     for (; i < notes.length && notes[i].time < to; i++) {
       const n = notes[i]
-      synth.pluck(midiOf(this.song, n), timeOf(n.time), n.duration / bps, velocityFor(n), articulationOf(n))
+      const start = timeOf(n.time)
+      synth.pluck(midiOf(this.song, n), start, timeOf(n.time + n.duration) - start, velocityFor(n), articulationOf(n))
     }
     if (this.metronome) {
       const bar = this.song.beatsPerBar

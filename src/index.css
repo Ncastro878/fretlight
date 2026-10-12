@@ -77,6 +77,10 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .rail-handle.idle { opacity: 0.45; }
 .rail-handle:hover { opacity: 1; }
 .hint { font-size: 11px; }
+.bpm-input { display: flex; align-items: center; gap: 4px; }
+.bpm-input input { width: 54px; background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 6px; font: 13px ui-monospace, Menlo, monospace; text-align: center; -moz-appearance: textfield; }
+.bpm-input input::-webkit-outer-spin-button, .bpm-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.bpm-input input:focus { outline: none; border-color: var(--accent); }
 
 /* Phones and narrow windows */
 .mobile-bar { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 6px; align-items: center; z-index: 2; }

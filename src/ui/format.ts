@@ -1,4 +1,4 @@
-import type { Song } from '../model/song'
+import { secondsAt, type Song } from '../model/song'
 
 export function formatBeat(song: Song, beat: number): string {
   const bar = Math.floor(beat / song.beatsPerBar) + 1
@@ -7,6 +7,6 @@ export function formatBeat(song: Song, beat: number): string {
 }
 
 export function formatClock(song: Song, beat: number, speed: number): string {
-  const secs = (beat / ((song.tempo * speed) / 60)) | 0
+  const secs = (secondsAt(song, beat) / speed) | 0
   return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
 }
