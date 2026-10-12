@@ -73,6 +73,29 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
     transport.seek(beatFromEvent(e))
   }
 
+  // Drag the A / B handles on the rail to set the loop. With no loop yet they
+  // sit at the ends, and dragging either one creates it. Snaps to whole beats.
+  const dragHandle = useRef<'a' | 'b' | null>(null)
+  const onHandleDown = (which: 'a' | 'b') => (e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragHandle.current = which
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onHandleMove = (e: React.PointerEvent) => {
+    const which = dragHandle.current
+    if (!which) return
+    e.stopPropagation()
+    const beat = Math.round(beatFromEvent(e))
+    const cur = transport.getSnapshot().loop ?? { a: 0, b: length }
+    if (which === 'a') transport.setLoop({ a: Math.max(0, Math.min(beat, cur.b - 1)), b: cur.b })
+    else transport.setLoop({ a: cur.a, b: Math.min(length, Math.max(beat, cur.a + 1)) })
+  }
+  const onHandleUp = (e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragHandle.current = null
+  }
+  const shownLoop = loop ?? { a: 0, b: length }
+
   const snap = (b: number) => Math.round(b / song.beatsPerBar) * song.beatsPerBar
   const setA = () => {
     const a = snap(transport.position())
@@ -238,9 +261,22 @@ export function TransportBar({ transport, compact = false, parts = null, onPart 
         ))}
         <div className="rail-fill" style={{ width: pct(pos) }} />
         <div className="rail-head" style={{ left: pct(pos) }} />
+        {(['a', 'b'] as const).map((which) => (
+          <div
+            key={which}
+            className={`rail-handle ${loop ? '' : 'idle'}`}
+            style={{ left: pct(shownLoop[which]) }}
+            onPointerDown={onHandleDown(which)}
+            onPointerMove={onHandleMove}
+            onPointerUp={onHandleUp}
+            title={which === 'a' ? 'Drag to set loop start' : 'Drag to set loop end'}
+          >
+            {which.toUpperCase()}
+          </div>
+        ))}
       </div>
       {!compact && (
-        <div className="hint dim">Space play/pause · ← → one bar · A / B set loop points · L toggle loop · drag the bar to scrub</div>
+        <div className="hint dim">Space play/pause · ← → one bar · A / B set loop points · L toggle loop · drag the bar to scrub, or the A / B handles to set the loop</div>
       )}
     </div>
   )

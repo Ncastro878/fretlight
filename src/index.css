@@ -67,12 +67,15 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .clock { font-size: 13px; }
 .spacer { flex: 1; }
 .loop-controls { display: flex; gap: 6px; }
-.rail { position: relative; height: 16px; background: rgba(255,255,255,0.06); border-radius: 8px; cursor: pointer; overflow: hidden; touch-action: none; }
-.rail-fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(250, 204, 21, 0.25); pointer-events: none; }
+.rail { position: relative; height: 16px; margin: 5px 0; background: rgba(255,255,255,0.06); border-radius: 8px; cursor: pointer; touch-action: none; }
+.rail-fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(250, 204, 21, 0.25); border-radius: 8px 0 0 8px; pointer-events: none; }
 .rail-head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); transform: translateX(-1px); pointer-events: none; }
 .rail-bar { position: absolute; top: 4px; bottom: 4px; width: 1px; background: rgba(255,255,255,0.15); pointer-events: none; }
 .rail-loop { position: absolute; top: 0; bottom: 0; background: rgba(250, 204, 21, 0.12); border-left: 1px solid rgba(250,204,21,0.5); border-right: 1px solid rgba(250,204,21,0.5); pointer-events: none; }
 .rail-loop.on { background: rgba(250, 204, 21, 0.28); }
+.rail-handle { position: absolute; top: -5px; bottom: -5px; width: 14px; transform: translateX(-50%); z-index: 2; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0b0f14; border-radius: 3px; font: bold 9px ui-monospace, Menlo, monospace; cursor: ew-resize; touch-action: none; user-select: none; }
+.rail-handle.idle { opacity: 0.45; }
+.rail-handle:hover { opacity: 1; }
 .hint { font-size: 11px; }
 
 /* Phones and narrow windows */
@@ -91,6 +94,7 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: 
 .app.mobile .clock { font-size: 12px; margin-left: auto; }
 .app.mobile .loop-controls { margin-left: 0; }
 .app.mobile .rail { height: 22px; }
+.app.mobile .rail-handle { width: 22px; font-size: 11px; }
 @media (max-width: 420px) {
   .app.mobile .seg-btn { padding: 5px 5px; font-size: 11px; }
   .app.mobile .loop-controls .btn { padding: 7px 8px; font-size: 12px; }
