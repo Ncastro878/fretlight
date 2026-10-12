@@ -4,6 +4,7 @@ import type { Transport } from '../player/transport'
 import { lowerBound } from '../player/transport'
 import { FINGER_COLORS } from '../scene/geometry'
 import type { ChordLabel } from '../analysis/key'
+import type { Song } from '../model/song'
 
 interface Props {
   transport: Transport
@@ -12,7 +13,54 @@ interface Props {
 }
 
 const PX_PER_BEAT = 72
+/** Minimum room between consecutive note onsets so fret bubbles don't overlap. */
+const MIN_NOTE_GAP_PX = 24
 const PLAYHEAD_X = 150
+
+/**
+ * Maps beats to x like engraved notation: time is proportional, except each gap
+ * between note onsets gets at least MIN_NOTE_GAP_PX. Fast runs spread out and
+ * the strip scrolls quicker through them.
+ */
+class Spacing {
+  private beats: number[] = [0]
+  private xs: number[] = [0]
+
+  constructor(song: Song) {
+    for (const n of song.notes) {
+      const last = this.beats[this.beats.length - 1]
+      const gap = n.time - last
+      if (gap <= 0.01) continue
+      this.beats.push(n.time)
+      this.xs.push(this.xs[this.xs.length - 1] + Math.max(gap * PX_PER_BEAT, MIN_NOTE_GAP_PX))
+    }
+  }
+
+  /** Virtual x (from beat 0) for a beat. */
+  x(beat: number): number {
+    return interp(this.beats, this.xs, beat)
+  }
+
+  /** Beat at a virtual x. */
+  beat(x: number): number {
+    return interp(this.xs, this.beats, x, 1 / PX_PER_BEAT)
+  }
+}
+
+/** Piecewise-linear lookup of `to` at `v` along ascending `from`; linear outside. */
+function interp(from: number[], to: number[], v: number, outsideSlope = PX_PER_BEAT): number {
+  const last = from.length - 1
+  if (v <= from[0]) return to[0] + (v - from[0]) * outsideSlope
+  if (v >= from[last]) return to[last] + (v - from[last]) * outsideSlope
+  let lo = 0
+  let hi = last
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1
+    if (from[mid] <= v) lo = mid
+    else hi = mid
+  }
+  return to[lo] + ((v - from[lo]) / (from[hi] - from[lo])) * (to[hi] - to[lo])
+}
 
 /** Scrolling tablature: upcoming notes slide toward the playhead on the left. */
 export function TabStrip({ transport, chords }: Props) {
@@ -26,9 +74,16 @@ export function TabStrip({ transport, chords }: Props) {
     const ctx = el.getContext('2d')
     if (!ctx) return
     let raf = 0
+    let spacingSong: Song | null = null
+    let spacing: Spacing | null = null
 
     const draw = () => {
       const { song, loop, loopEnabled } = transport.getSnapshot()
+      if (song !== spacingSong || !spacing) {
+        spacingSong = song
+        spacing = new Spacing(song)
+      }
+      const sp = spacing
       const dpr = window.devicePixelRatio || 1
       const w = el.clientWidth
       const h = el.clientHeight
@@ -44,14 +99,15 @@ export function TabStrip({ transport, chords }: Props) {
       const gap = (h - 46) / (strings - 1)
       const yOf = (s: number) => top + (strings - 1 - s) * gap
       const pos = transport.position()
-      const xOf = (beat: number) => PLAYHEAD_X + (beat - pos) * PX_PER_BEAT
-      const firstBeat = pos - PLAYHEAD_X / PX_PER_BEAT
-      const lastBeat = pos + (w - PLAYHEAD_X) / PX_PER_BEAT
+      const posX = sp.x(pos)
+      const xOf = (beat: number) => PLAYHEAD_X + sp.x(beat) - posX
+      const firstBeat = sp.beat(posX - PLAYHEAD_X)
+      const lastBeat = sp.beat(posX + w - PLAYHEAD_X)
 
       // Loop region
       if (loop && loopEnabled) {
         ctx.fillStyle = 'rgba(250, 204, 21, 0.08)'
-        ctx.fillRect(xOf(loop.a), 0, (loop.b - loop.a) * PX_PER_BEAT, h)
+        ctx.fillRect(xOf(loop.a), 0, xOf(loop.b) - xOf(loop.a), h)
       }
 
       // Bar lines
@@ -113,7 +169,7 @@ export function TabStrip({ transport, chords }: Props) {
         const active = n.time <= pos && n.time + Math.max(n.duration, 0.25) > pos
         const past = n.time + n.duration < pos
         const color = FINGER_COLORS[n.fret === 0 ? 0 : (n.finger ?? 1)]
-        const durPx = Math.max(2, n.duration * PX_PER_BEAT - 3)
+        const durPx = Math.max(2, xOf(n.time + n.duration) - x - 3)
         ctx.globalAlpha = past ? 0.35 : 1
 
         // Duration bar
