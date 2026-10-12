@@ -34,6 +34,8 @@ export interface TransportState {
 
 const LOOKAHEAD_SEC = 0.15
 const TICK_MS = 25
+/** Clicks before playback starts when the count-in is on. */
+const COUNT_IN_BEATS = 3
 
 /**
  * Song clock and note scheduler. Beats are the unit of position; the
@@ -46,7 +48,7 @@ export class Transport {
   private loop: LoopRange | null = null
   private loopEnabled = false
   private metronome = false
-  private countIn = false
+  private countIn = true
   private ramp: Ramp | null = null
 
   private ctx: AudioContext | null = null
@@ -127,7 +129,7 @@ export class Transport {
       void this.warm()
       if (wasPlaying) {
         this.pausedBeat = Math.max(0, pos)
-        void this.play()
+        void this.play({ countIn: false })
       }
     }
     this.emit()
@@ -164,7 +166,8 @@ export class Transport {
     this.emit()
   }
 
-  async play(): Promise<void> {
+  /** Start playback. `countIn: false` skips the count-in (for restarts mid-song). */
+  async play(opts: { countIn?: boolean } = {}): Promise<void> {
     if (this.playing) return
     if (!this.ctx) {
       this.ctx = new AudioContext()
@@ -178,11 +181,10 @@ export class Transport {
     if (this.pausedBeat >= end - 1e-6) this.pausedBeat = this.loopEnabled && this.loop ? this.loop.a : 0
     this.anchorBeat = this.pausedBeat
     this.anchorTime = this.ctx.currentTime + 0.05
-    if (this.countIn) {
-      const bar = this.song.beatsPerBar
+    if (opts.countIn ?? this.countIn) {
       const beatSec = 1 / this.beatsPerSecond()
-      this.anchorTime += bar * beatSec
-      for (let k = 0; k < bar; k++) this.synth?.click(this.anchorTime - (bar - k) * beatSec, k === 0)
+      this.anchorTime += COUNT_IN_BEATS * beatSec
+      for (let k = 0; k < COUNT_IN_BEATS; k++) this.synth?.click(this.anchorTime - (COUNT_IN_BEATS - k) * beatSec, k === 0)
     }
     this.scheduledUntil = this.pausedBeat
     this.wrappedUntil = this.loop ? this.loop.a : 0

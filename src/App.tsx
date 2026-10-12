@@ -60,7 +60,7 @@ export default function App() {
       transport.setLoopEnabled(loopEnabled)
     }
     transport.seek(pos)
-    if (wasPlaying) void transport.play()
+    if (wasPlaying) void transport.play({ countIn: false })
     setLoadedScore({ ...loadedScore, trackIndex })
   }
   // Parts only apply while the imported song is the one playing.

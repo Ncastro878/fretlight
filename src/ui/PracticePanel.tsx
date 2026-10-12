@@ -218,7 +218,7 @@ export function PracticePanel({ transport, song, onLoad, routine }: Props) {
           <input type="checkbox" checked={state.metronome} onChange={(e) => transport.setMetronome(e.target.checked)} /> Metronome click
         </label>
         <label className="check">
-          <input type="checkbox" checked={state.countIn} onChange={(e) => transport.setCountIn(e.target.checked)} /> One bar count-in
+          <input type="checkbox" checked={state.countIn} onChange={(e) => transport.setCountIn(e.target.checked)} /> 3-beat count-in
         </label>
         <p className="dim small">
           Now at <b className="mono">{state.bpm} bpm</b>. The trainer needs a loop: load an exercise or lick, or set A and B on a song.

@@ -136,7 +136,7 @@ export default function App() {
   const preview = (list: Step[]) => {
     const song = arrangementSong(key, list, 80)
     transport.setSong(song)
-    void transport.play()
+    void transport.play({ countIn: false })
     if (previewTimer.current) window.clearTimeout(previewTimer.current)
     previewTimer.current = window.setTimeout(() => transport.pause(), 1600)
   }
