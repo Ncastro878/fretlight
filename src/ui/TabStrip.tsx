@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { bendLabel, noteName } from '../model/song'
 import type { Transport } from '../player/transport'
 import { lowerBound } from '../player/transport'
-import { FINGER_COLORS } from '../scene/geometry'
 import type { ChordLabel } from '../analysis/key'
 import type { Song } from '../model/song'
 
@@ -16,6 +15,9 @@ const PX_PER_BEAT = 72
 /** Minimum room between consecutive note onsets so fret bubbles don't overlap. */
 const MIN_NOTE_GAP_PX = 30
 const PLAYHEAD_X = 150
+// Plain tab: neutral notes, the playing note in the accent color. Finger colors stay on the 3D neck.
+const NOTE_COLOR = '#c9d1dc'
+const ACTIVE_COLOR = '#facc15'
 
 /**
  * Maps beats to x like engraved notation: time is proportional, except each gap
@@ -168,7 +170,7 @@ export function TabStrip({ transport, chords }: Props) {
         const y = yOf(n.string)
         const active = n.time <= pos && n.time + Math.max(n.duration, 0.25) > pos
         const past = n.time + n.duration < pos
-        const color = FINGER_COLORS[n.fret === 0 ? 0 : (n.finger ?? 1)]
+        const color = active ? ACTIVE_COLOR : NOTE_COLOR
         const durPx = Math.max(2, xOf(n.time + n.duration) - x - 3)
         ctx.globalAlpha = past ? 0.35 : 1
 
