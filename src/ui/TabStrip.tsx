@@ -14,7 +14,7 @@ interface Props {
 
 const PX_PER_BEAT = 72
 /** Minimum room between consecutive note onsets so fret bubbles don't overlap. */
-const MIN_NOTE_GAP_PX = 24
+const MIN_NOTE_GAP_PX = 30
 const PLAYHEAD_X = 150
 
 /**
